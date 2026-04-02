@@ -1,0 +1,65 @@
+<!--
+  TrailVisualizer.html
+  Tela de visualização de trilhas de leitura e navegação.
+  Exibe caminhos percorridos, mapas de trilhas e permite análise visual das rotas do usuário.
+  Elementos típicos: listas de trilhas, gráficos, navegação visual.
+  Autor: [Seu Nome]
+  Data de criação: [Data]
+  Última modificação: [Data]
+-->
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Visualizar Trilhas</title>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f6f8fa; color: #222; margin: 0; padding: 2em; }
+    .container { max-width: 380px; margin: 3em auto; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px #0001; padding: 2em; }
+    h2 { margin-top: 0; font-weight: 500; }
+    ul { padding-left: 1.2em; }
+    li { margin-bottom: 0.7em; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Visualizar Trilhas</h2>
+    <ul id="trail-list">
+      <li>Carregando trilha...</li>
+    </ul>
+    <div id="msg" style="margin-top:1em;font-size:0.97em;"></div>
+  </div>
+<script>
+  function renderTrail(trail) {
+    var ul = document.getElementById('trail-list');
+    ul.innerHTML = '';
+    if (!trail || !trail.length) {
+      ul.innerHTML = '<li>Nenhuma trilha encontrada.</li>';
+      return;
+    }
+    trail.forEach(function(node) {
+      var li = document.createElement('li');
+      li.innerHTML = '<b>Passo ' + node.step + ':</b> ' +
+        (node.bookTitle ? node.bookTitle + ' <span style="color:#888">(' + node.category + ')</span>' : '') +
+        '<br><small>' + node.connectionType + (node.insight ? ' — ' + node.insight : '') + '</small>';
+      ul.appendChild(li);
+    });
+  }
+  function carregarTrilha() {
+    var msg = document.getElementById('msg');
+    msg.textContent = '';
+    google.script.run.withSuccessHandler(function(email) {
+      google.script.run.withSuccessHandler(function(trail) {
+        renderTrail(trail);
+      }).withFailureHandler(function(e) {
+        msg.style.color = '#f87171';
+        msg.textContent = 'Erro ao carregar trilha: ' + e.message;
+      }).mapUserReadingTrail(email);
+    }).withFailureHandler(function(e) {
+      msg.style.color = '#f87171';
+      msg.textContent = 'Erro ao obter usuário: ' + e.message;
+    }).getAuthenticatedUserEmail();
+  }
+  window.onload = carregarTrilha;
+</script>
+</body>
+</html>

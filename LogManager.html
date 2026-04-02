@@ -1,0 +1,35 @@
+<!-- Log Manager UI -->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Logs do Sistema</title>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f6f8fa; color: #222; margin: 0; padding: 2em; }
+    .container { max-width: 340px; margin: 3em auto; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px #0001; padding: 2em; }
+    h2 { margin-top: 0; font-weight: 500; }
+    pre { background: #f3f3f3; border-radius: 5px; padding: 1em; font-size: 0.97em; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Logs do Sistema</h2>
+    <pre id="logs">Carregando logs...</pre>
+  </div>
+  <script>
+    function carregarLogs() {
+      var pre = document.getElementById('logs');
+      google.script.run.withSuccessHandler(function(logs) {
+        if (!logs || !logs.length) {
+          pre.textContent = 'Nenhum log encontrado.';
+        } else {
+          pre.textContent = logs.join('\n');
+        }
+      }).withFailureHandler(function(e) {
+        pre.textContent = 'Erro ao carregar logs: ' + e.message;
+      }).getRecentLogs(10);
+    }
+    window.onload = carregarLogs;
+  </script>
+</body>
+</html>

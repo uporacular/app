@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Relatórios</title>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f6f8fa; color: #222; margin: 0; padding: 2em; }
+    .container { max-width: 340px; margin: 3em auto; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px #0001; padding: 2em; }
+    h2 { margin-top: 0; font-weight: 500; }
+    label { display: block; margin-top: 1em; font-size: 0.97em; }
+    input { width: 100%; padding: 0.5em; margin-top: 0.3em; border: 1px solid #ccc; border-radius: 5px; font-size: 1em; }
+    button { margin-top: 1.5em; background: #2d8cff; color: #fff; border: none; border-radius: 5px; padding: 0.7em 1.5em; font-size: 1em; cursor: pointer; transition: background 0.2s; }
+    button:hover { background: #1a6ed8; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Gerar Relatório</h2>
+    <label>ID do Usuário
+      <input id="userId" type="text" placeholder="Digite o ID do usuário">
+    </label>
+    <button id="btnRel">Gerar Relatório</button>
+    <div id="msg" style="margin-top:1em;font-size:0.97em;"></div>
+  </div>
+  <script>
+    document.getElementById('btnRel').onclick = function() {
+      var userId = document.getElementById('userId').value.trim();
+      var msg = document.getElementById('msg');
+      if (!userId) { msg.textContent = 'Digite o ID do usuário.'; return; }
+      msg.textContent = 'Gerando relatório...';
+      google.script.run.withSuccessHandler(function(url) {
+        if (url && url.startsWith('http')) {
+          msg.innerHTML = 'Relatório gerado: <a href="' + url + '" target="_blank">Abrir Planilha</a>';
+        } else {
+          msg.textContent = url;
+        }
+      }).withFailureHandler(function(e) {
+        msg.textContent = 'Erro ao gerar relatório: ' + e.message;
+      }).generateUserReadingReport(userId);
+    };
+  </script>
+</body>
+</html>

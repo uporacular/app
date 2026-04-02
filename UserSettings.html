@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Configurações</title>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f6f8fa; color: #222; margin: 0; padding: 2em; }
+    .container { max-width: 340px; margin: 3em auto; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px #0001; padding: 2em; }
+    h2 { margin-top: 0; font-weight: 500; }
+    label { display: block; margin-top: 1em; font-size: 0.97em; }
+    input { width: 100%; padding: 0.5em; margin-top: 0.3em; border: 1px solid #ccc; border-radius: 5px; font-size: 1em; }
+    button { margin-top: 1.5em; background: #2d8cff; color: #fff; border: none; border-radius: 5px; padding: 0.7em 1.5em; font-size: 1em; cursor: pointer; transition: background 0.2s; }
+    button:hover { background: #1a6ed8; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Configurações</h2>
+    <label>Idioma
+      <input id="idioma" type="text" placeholder="Ex: Português">
+    </label>
+    <label>Tema
+      <input id="tema" type="text" placeholder="Claro/Escuro">
+    </label>
+    <button id="btnSalvar">Salvar</button>
+    <div id="msg" style="margin-top:1em;font-size:0.97em;"></div>
+  </div>
+<script>
+  function showMsg(text, isError) {
+    var msg = document.getElementById('msg');
+    msg.style.color = isError ? '#f87171' : '#222';
+    msg.textContent = text;
+  }
+  function carregarSettings() {
+    showMsg('Carregando configurações...', false);
+    google.script.run.withSuccessHandler(function(email) {
+      google.script.run.withSuccessHandler(function(settings) {
+        if (settings) {
+          document.getElementById('idioma').value = settings.idioma || '';
+          document.getElementById('tema').value = settings.tema || '';
+        }
+        showMsg('', false);
+      }).withFailureHandler(function(e) {
+        showMsg('Erro ao carregar configurações: ' + e.message, true);
+      }).getUserSettings(email);
+    }).withFailureHandler(function(e) {
+      showMsg('Erro ao obter usuário: ' + e.message, true);
+    }).getAuthenticatedUserEmail();
+  }
+  document.getElementById('btnSalvar').onclick = function() {
+    var idioma = document.getElementById('idioma').value.trim();
+    var tema = document.getElementById('tema').value.trim();
+    showMsg('Salvando...', false);
+    google.script.run.withSuccessHandler(function(email) {
+      google.script.run.withSuccessHandler(function() {
+        showMsg('Configurações salvas!', false);
+      }).withFailureHandler(function(e) {
+        showMsg('Erro ao salvar: ' + e.message, true);
+      }).saveUserSettings(email, { idioma: idioma, tema: tema });
+    }).withFailureHandler(function(e) {
+      showMsg('Erro ao obter usuário: ' + e.message, true);
+    }).getAuthenticatedUserEmail();
+  };
+  window.onload = carregarSettings;
+</script>
+</body>
+</html>

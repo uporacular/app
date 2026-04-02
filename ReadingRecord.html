@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UpOracular | Registros de Leitura</title>
+  <meta name="description" content="Gerencie seus registros de leitura com o UpOracular.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: rgba(30, 41, 59, 0.75);
+      --border: rgba(255, 255, 255, 0.1);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent2: #818cf8;
+      --danger: #f87171;
+      --success: #4ade80;
+      --radius: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      background-image:
+        radial-gradient(at 0% 0%, rgba(56, 189, 248, .12) 0px, transparent 55%),
+        radial-gradient(at 100% 100%, rgba(129, 140, 248, .1) 0px, transparent 55%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 1.5rem 1rem 3rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    /* ── Header ── */
+    .page-header {
+      width: 100%;
+      max-width: 560px;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .page-header a {
+      color: var(--muted);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      transition: color .2s;
+    }
+
+    .page-header a:hover {
+      color: var(--accent);
+    }
+
+    .page-header h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* ── Card ── */
+    .card {
+      width: 100%;
+      max-width: 560px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 1.5rem;
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    .card h2 {
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 1.1rem;
+    }
+
+    /* ── Form ── */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      margin-bottom: 1rem;
+    }
+
+    label {
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--muted);
+      letter-spacing: .04em;
+    }
+
+    input,
+    select,
+    textarea {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.9rem;
+      padding: 0.65rem 0.9rem;
+      width: 100%;
+      transition: border-color .2s, box-shadow .2s;
+      outline: none;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, .15);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 72px;
+    }
+
+    select option {
+      background: #1e293b;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 0.6rem 1.1rem;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      transition: all .25s ease;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #0f172a;
+      width: 100%;
+      justify-content: center;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px -8px rgba(56, 189, 248, .5);
+    }
+
+    .btn-ghost {
+      background: rgba(255, 255, 255, .06);
+      color: var(--muted);
+    }
+
+    .btn-ghost:hover {
+      background: rgba(255, 255, 255, .1);
+      color: var(--text);
+    }
+
+    .btn-danger {
+      background: rgba(248, 113, 113, .15);
+      color: var(--danger);
+    }
+
+    .btn-danger:hover {
+      background: rgba(248, 113, 113, .25);
+    }
+
+    .btn-icon {
+      padding: 0.4rem;
+      border-radius: 8px;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 0.6rem;
+      margin-top: 0.25rem;
+    }
+
+    .form-actions .btn-primary {
+      flex: 1;
+    }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 0.75rem 1.25rem;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      backdrop-filter: blur(20px);
+      transition: transform .4s cubic-bezier(.34, 1.56, .64, 1);
+      z-index: 999;
+    }
+
+    #toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    #toast.success {
+      border-color: rgba(74, 222, 128, .4);
+      color: var(--success);
+    }
+
+    #toast.error {
+      border-color: rgba(248, 113, 113, .4);
+      color: var(--danger);
+    }
+
+    /* ── Records List ── */
+    .records-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .record-item {
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 0.5rem;
+      align-items: start;
+      transition: border-color .2s;
+      animation: slideIn .3s ease both;
+    }
+
+    .record-item:hover {
+      border-color: rgba(56, 189, 248, .3);
+    }
+
+    .record-book {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .record-meta {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 0.25rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .tag {
+      background: rgba(56, 189, 248, .12);
+      color: var(--accent);
+      border-radius: 6px;
+      padding: 0.15rem 0.5rem;
+      font-size: 0.7rem;
+      font-weight: 500;
+    }
+
+    .stars {
+      color: #fbbf24;
+      font-size: 0.8rem;
+    }
+
+    .record-actions {
+      display: flex;
+      gap: 0.4rem;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: var(--muted);
+      padding: 2rem 0;
+      font-size: 0.9rem;
+    }
+
+    .empty-state .material-symbols-outlined {
+      font-size: 2.5rem;
+      display: block;
+      margin-bottom: 0.5rem;
+      opacity: .4;
+    }
+
+    /* ── Loading ── */
+    .spinner {
+      width: 24px;
+      height: 24px;
+      border: 3px solid rgba(56, 189, 248, .2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      margin: 1rem auto;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* ── Responsive ── */
+    @media (min-width: 480px) {
+      body {
+        padding: 2rem 1.5rem 3rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="page-header">
+    <a href="index.html" aria-label="Voltar ao menu">
+      <span class="material-symbols-outlined">arrow_back</span>
+    </a>
+    <h1>Registros de Leitura</h1>
+  </div>
+
+  <!-- CREATE / EDIT Form -->
+  <section class="card" id="form-card" aria-label="Formulário de Registro de Leitura">
+    <h2 id="form-title">Novo Registro</h2>
+
+    <div class="form-group">
+      <label for="field-book">Título do Livro</label>
+      <input type="text" id="field-book" placeholder="Ex: Dom Casmurro" maxlength="200">
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="field-category">Categoria</label>
+        <select id="field-category">
+          <option value="">— Selecione —</option>
+          <option>Literatura Brasileira</option>
+          <option>Literatura Africana</option>
+          <option>Ciências</option>
+          <option>Ciências Humanas</option>
+          <option>Matemática</option>
+          <option>Arte e Cultura</option>
+          <option>Fantasia / Ficção</option>
+          <option>Outro</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="field-date">Data de Leitura</label>
+        <input type="date" id="field-date">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="field-rating">Avaliação (1–5)</label>
+      <select id="field-rating">
+        <option value="">— Sem avaliação —</option>
+        <option value="1">⭐ 1 — Não gostei</option>
+        <option value="2">⭐⭐ 2 — Regular</option>
+        <option value="3">⭐⭐⭐ 3 — Bom</option>
+        <option value="4">⭐⭐⭐⭐ 4 — Muito bom</option>
+        <option value="5">⭐⭐⭐⭐⭐ 5 — Excelente</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="field-notes">Anotações</label>
+      <textarea id="field-notes" placeholder="O que esse livro me disse…"></textarea>
+    </div>
+
+    <!-- Hidden edit-mode state -->
+    <input type="hidden" id="edit-id" value="">
+
+    <div class="form-actions">
+      <button class="btn btn-primary" id="btn-save" onclick="saveRecord()">
+        <span class="material-symbols-outlined" style="font-size:18px">save</span>
+        Salvar Registro
+      </button>
+      <button class="btn btn-ghost" id="btn-cancel" onclick="cancelEdit()" style="display:none">
+        Cancelar
+      </button>
+    </div>
+  </section>
+
+  <!-- LIST -->
+  <section class="card" aria-label="Lista de Registros">
+    <h2>Meus Registros</h2>
+    <div id="records-container">
+      <div class="spinner"></div>
+    </div>
+  </section>
+
+  <!-- Toast -->
+  <div id="toast" role="alert" aria-live="polite"></div>
+
+  <script>
+    // ─── State ───────────────────────────────────────────────────────────────
+    let currentUserId = '';
+    let records = [];
+
+    // ─── Init ─────────────────────────────────────────────────────────────────
+    document.getElementById('field-date').value = new Date().toISOString().slice(0, 10);
+
+    google.script.run
+      .withSuccessHandler(email => {
+        currentUserId = email;
+        loadRecords();
+      })
+      .withFailureHandler(err => showToast('Erro ao autenticar: ' + err.message, 'error'))
+      .getAuthenticatedUserEmail();
+
+    // ─── Load Records (READ) ──────────────────────────────────────────────────
+    function loadRecords() {
+      document.getElementById('records-container').innerHTML = '<div class="spinner"></div>';
+      google.script.run
+        .withSuccessHandler(renderRecords)
+        .withFailureHandler(err => showToast('Erro ao carregar: ' + err.message, 'error'))
+        .getReadingRecordsByUser(currentUserId);
+    }
+
+    function renderRecords(data) {
+      records = data || [];
+      const container = document.getElementById('records-container');
+
+      if (records.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <span class="material-symbols-outlined">menu_book</span>
+            Nenhum registro ainda. Adicione sua primeira leitura!
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = '<div class="records-list" id="records-list"></div>';
+      const list = document.getElementById('records-list');
+      records.forEach(r => list.appendChild(buildRecordCard(r)));
+    }
+
+    function buildRecordCard(r) {
+      const stars = r.rating ? '⭐'.repeat(Number(r.rating)) : '';
+      const div = document.createElement('div');
+      div.className = 'record-item';
+      div.dataset.id = r.id;
+      div.innerHTML = `
+        <div>
+          <div class="record-book">${escHtml(r.book)}</div>
+          <div class="record-meta">
+            ${r.category ? `<span class="tag">${escHtml(r.category)}</span>` : ''}
+            ${r.date ? `<span>${escHtml(r.date)}</span>` : ''}
+            ${stars ? `<span class="stars">${stars}</span>` : ''}
+          </div>
+          ${r.notes ? `<p style="font-size:.78rem;color:var(--muted);margin-top:.5rem">${escHtml(r.notes)}</p>` : ''}
+        </div>
+        <div class="record-actions">
+          <button class="btn btn-ghost btn-icon" onclick="startEdit('${r.id}')" aria-label="Editar registro" title="Editar">
+            <span class="material-symbols-outlined" style="font-size:18px">edit</span>
+          </button>
+          <button class="btn btn-danger btn-icon" onclick="removeRecord('${r.id}')" aria-label="Excluir registro" title="Excluir">
+            <span class="material-symbols-outlined" style="font-size:18px">delete</span>
+          </button>
+        </div>`;
+      return div;
+    }
+
+    // ─── Create / Update (SAVE) ───────────────────────────────────────────────
+    function saveRecord() {
+      const book = document.getElementById('field-book').value.trim();
+      const category = document.getElementById('field-category').value;
+      const date = document.getElementById('field-date').value;
+      const rating = document.getElementById('field-rating').value;
+      const notes = document.getElementById('field-notes').value.trim();
+      const editId = document.getElementById('edit-id').value;
+
+      if (!book) { showToast('Informe o título do livro.', 'error'); return; }
+
+      setBusy(true);
+
+      if (editId) {
+        // UPDATE
+        google.script.run
+          .withSuccessHandler(() => { showToast('Registro atualizado!', 'success'); cancelEdit(); loadRecords(); })
+          .withFailureHandler(err => { showToast('Erro: ' + err.message, 'error'); setBusy(false); })
+          .updateReadingRecord(editId, { book, category, date, rating, notes });
+      } else {
+        // CREATE
+        const record = { userId: currentUserId, book, category, date, rating, notes };
+        google.script.run
+          .withSuccessHandler(() => { showToast('Registro adicionado!', 'success'); resetForm(); loadRecords(); })
+          .withFailureHandler(err => { showToast('Erro: ' + err.message, 'error'); setBusy(false); })
+          .createReadingRecord(record);
+      }
+    }
+
+    // ─── Edit Mode ────────────────────────────────────────────────────────────
+    function startEdit(id) {
+      const r = records.find(x => x.id === id);
+      if (!r) return;
+      document.getElementById('edit-id').value = r.id;
+      document.getElementById('field-book').value = r.book;
+      document.getElementById('field-category').value = r.category || '';
+      document.getElementById('field-date').value = r.date || '';
+      document.getElementById('field-rating').value = r.rating || '';
+      document.getElementById('field-notes').value = r.notes || '';
+      document.getElementById('form-title').textContent = 'Editar Registro';
+      document.getElementById('btn-cancel').style.display = 'inline-flex';
+      document.getElementById('form-card').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function cancelEdit() {
+      resetForm();
+      document.getElementById('form-title').textContent = 'Novo Registro';
+      document.getElementById('btn-cancel').style.display = 'none';
+    }
+
+    // ─── Delete ───────────────────────────────────────────────────────────────
+    function removeRecord(id) {
+      if (!confirm('Excluir este registro permanentemente?')) return;
+      setBusy(true);
+      google.script.run
+        .withSuccessHandler(() => { showToast('Registro excluído.', 'success'); loadRecords(); })
+        .withFailureHandler(err => { showToast('Erro: ' + err.message, 'error'); setBusy(false); })
+        .deleteReadingRecord(id);
+    }
+
+    // ─── Helpers ──────────────────────────────────────────────────────────────
+    function resetForm() {
+      document.getElementById('field-book').value = '';
+      document.getElementById('field-category').value = '';
+      document.getElementById('field-date').value = new Date().toISOString().slice(0, 10);
+      document.getElementById('field-rating').value = '';
+      document.getElementById('field-notes').value = '';
+      document.getElementById('edit-id').value = '';
+      setBusy(false);
+    }
+
+    function setBusy(busy) {
+      document.getElementById('btn-save').disabled = busy;
+    }
+
+    function escHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    let toastTimer;
+    function showToast(msg, type = 'success') {
+      const el = document.getElementById('toast');
+      const icon = type === 'success' ? 'check_circle' : 'error';
+      el.innerHTML = `<span class="material-symbols-outlined" style="font-size:18px">${icon}</span>${msg}`;
+      el.className = `show ${type}`;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { el.className = ''; }, 3500);
+    }
+  </script>
+</body>
+
+</html>

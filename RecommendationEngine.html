@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Recomendações</title>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f6f8fa; color: #222; margin: 0; padding: 2em; }
+    .container { max-width: 340px; margin: 3em auto; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px #0001; padding: 2em; }
+    h2 { margin-top: 0; font-weight: 500; }
+    ul { padding-left: 1.2em; }
+    li { margin-bottom: 0.7em; }
+    button { background: #2d8cff; color: #fff; border: none; border-radius: 5px; padding: 0.7em 1.5em; font-size: 1em; cursor: pointer; transition: background 0.2s; margin-top: 1em; }
+    button:hover { background: #1a6ed8; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Recomendações</h2>
+    <ul id="listaRec">
+      <li>Carregue suas recomendações...</li>
+    </ul>
+    <button id="btnRec">Gerar Recomendações</button>
+    <div id="msg" style="margin-top:1em;font-size:0.97em;"></div>
+    <div id="spinner" style="display:none;margin-top:1em;text-align:center;">
+      <span style="display:inline-block;width:24px;height:24px;border:3px solid #2d8cff33;border-top-color:#2d8cff;border-radius:50%;animation:spin .7s linear infinite;"></span>
+    </div>
+  </div>
+  <script>
+    function renderRecs(recs) {
+      var ul = document.getElementById('listaRec');
+      ul.innerHTML = '';
+      if (!recs || !recs.length) {
+        ul.innerHTML = '<li>Nenhuma recomendação encontrada.</li>';
+        return;
+      }
+      recs.forEach(function(r) {
+        var li = document.createElement('li');
+        li.textContent = r;
+        ul.appendChild(li);
+      });
+    }
+
+    function showSpinner(show) {
+      document.getElementById('spinner').style.display = show ? '' : 'none';
+    }
+    function showMsg(text, isError) {
+      var msg = document.getElementById('msg');
+      msg.style.color = isError ? '#f87171' : '#222';
+      msg.innerHTML = text;
+    }
+    function gerarRecs() {
+      showSpinner(true);
+      showMsg('Buscando recomendações...', false);
+      google.script.run.withSuccessHandler(function(email) {
+        google.script.run.withSuccessHandler(function(profile) {
+          if (!profile) { showSpinner(false); showMsg('Perfil não encontrado.', true); return; }
+          google.script.run.withSuccessHandler(function(history) {
+            google.script.run.withSuccessHandler(function(recs) {
+              showSpinner(false);
+              renderRecs(recs);
+              showMsg('Recomendações atualizadas.', false);
+            }).withFailureHandler(function(e){
+              showSpinner(false);
+              showMsg('Erro ao gerar recomendações: ' + e.message, true);
+            }).generateRecommendations(profile, history);
+          }).getReadingRecordsByUser(email);
+        }).getUserProfile(email);
+      }).getAuthenticatedUserEmail();
+    }
+    // Spinner CSS
+    var style = document.createElement('style');
+    style.innerHTML = '@keyframes spin { to { transform: rotate(360deg); } }';
+    document.head.appendChild(style);
+
+    document.getElementById('btnRec').onclick = gerarRecs;
+    // Carrega recomendações ao abrir
+    window.onload = gerarRecs;
+  </script>
+</body>
+</html>

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Perfil do Usuário</title>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f6f8fa; color: #222; margin: 0; padding: 2em; }
+    .container { max-width: 340px; margin: 3em auto; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px #0001; padding: 2em; }
+    h2 { margin-top: 0; font-weight: 500; }
+    label { display: block; margin-top: 1em; font-size: 0.97em; }
+    input, textarea { width: 100%; padding: 0.5em; margin-top: 0.3em; border: 1px solid #ccc; border-radius: 5px; font-size: 1em; }
+    button { margin-top: 1.5em; background: #2d8cff; color: #fff; border: none; border-radius: 5px; padding: 0.7em 1.5em; font-size: 1em; cursor: pointer; transition: background 0.2s; }
+    button:hover { background: #1a6ed8; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Perfil do Usuário</h2>
+    <label>Nome
+      <input id="nome" type="text" placeholder="Seu nome">
+    </label>
+    <label>Email
+      <input id="email" type="email" placeholder="seu@email.com" disabled>
+    </label>
+    <label>Interesses
+      <textarea id="interesses" rows="2" placeholder="Ex: Literatura, Ciência, História"></textarea>
+    </label>
+    <button id="salvarBtn">Salvar</button>
+    <div id="msg" style="margin-top:1em;font-size:0.97em;"></div>
+    <div id="spinner" style="display:none;margin-top:1em;text-align:center;">
+      <span style="display:inline-block;width:24px;height:24px;border:3px solid #2d8cff33;border-top-color:#2d8cff;border-radius:50%;animation:spin .7s linear infinite;"></span>
+    </div>
+  </div>
+  <script>
+    function showSpinner(show) {
+      document.getElementById('spinner').style.display = show ? '' : 'none';
+    }
+    function showMsg(text, isError) {
+      var msg = document.getElementById('msg');
+      msg.style.color = isError ? '#f87171' : '#222';
+      msg.innerHTML = text;
+    }
+    function carregarPerfil() {
+      showSpinner(true);
+      showMsg('Carregando perfil...', false);
+      google.script.run.withSuccessHandler(function(email) {
+        document.getElementById('email').value = email;
+        google.script.run.withSuccessHandler(function(profile) {
+          showSpinner(false);
+          if (profile) {
+            document.getElementById('nome').value = profile.name || '';
+            document.getElementById('interesses').value = profile.interests || '';
+          }
+        }).withFailureHandler(function(e) {
+          showSpinner(false);
+          showMsg('Erro ao carregar perfil: ' + e.message, true);
+        }).getUserProfile(email);
+      }).withFailureHandler(function(e) {
+        showSpinner(false);
+        showMsg('Erro ao obter email: ' + e.message, true);
+      }).getAuthenticatedUserEmail();
+    }
+    document.getElementById('salvarBtn').onclick = function() {
+      var nome = document.getElementById('nome').value.trim();
+      var email = document.getElementById('email').value.trim();
+      var interesses = document.getElementById('interesses').value.trim();
+      showSpinner(true);
+      showMsg('Salvando...', false);
+      var profile = { id: email, name: nome, email: email, interests: interesses };
+      google.script.run.withSuccessHandler(function() {
+        showSpinner(false);
+        showMsg('Perfil salvo com sucesso!', false);
+      }).withFailureHandler(function(e) {
+        showSpinner(false);
+        showMsg('Erro ao salvar: ' + e.message, true);
+      }).saveUserProfile(profile);
+    };
+    window.onload = carregarPerfil;
+    // Spinner CSS
+    var style = document.createElement('style');
+    style.innerHTML = '@keyframes spin { to { transform: rotate(360deg); } }';
+    document.head.appendChild(style);
+  </script>
+</body>
+</html>

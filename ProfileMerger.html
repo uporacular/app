@@ -1,0 +1,30 @@
+<!--
+  ProfileMerger.html
+  Interface para fusão de perfis de usuário.
+  Permite combinar dados de múltiplos perfis em um único registro.
+  Elementos típicos: seleção de perfis, botões de mesclar, mensagens de sucesso/erro.
+  Autor: [Seu Nome]
+  Data de criação: [Data]
+  Última modificação: [Data]
+-->
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Profile Merger</title>
+</head>
+<body>
+  <h1>Fusão de Perfis</h1>
+  <form id="mergeForm" style="margin: 2em 0;">
+    <label>Email 1:<br><input type="email" name="email1" required style="width: 220px; margin-bottom: 1em;"></label><br>
+    <label>Email 2:<br><input type="email" name="email2" required style="width: 220px;"></label><br>
+    <button type="submit" style="margin-top: 1em; background: #4a90e2; color: #fff; border: none; padding: 0.6em 1.5em; border-radius: 5px; cursor: pointer;">Mesclar Perfis</button>
+  </form>
+  <div id="result" style="margin-top: 1.5em; color: #4a5; font-weight: 500;"></div>
+  <script>
+    document.getElementById('mergeForm').onsubmit = function(e) {
+      e.preventDefault();
+      document.getElementById('result').textContent = 'Perfis mesclados com sucesso! (simulação)';
+    };
+  </script>
+</body>
+</html>

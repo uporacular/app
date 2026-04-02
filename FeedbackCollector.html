@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Enviar Feedback</title>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f6f8fa; color: #222; margin: 0; padding: 2em; }
+    .container { max-width: 340px; margin: 3em auto; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px #0001; padding: 2em; }
+    h2 { margin-top: 0; font-weight: 500; }
+    textarea { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 5px; font-size: 1em; margin-top: 1em; }
+    button { margin-top: 1.5em; background: #2d8cff; color: #fff; border: none; border-radius: 5px; padding: 0.7em 1.5em; font-size: 1em; cursor: pointer; transition: background 0.2s; }
+    button:hover { background: #1a6ed8; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Enviar Feedback</h2>
+    <textarea id="feedback" rows="4" placeholder="Digite seu feedback..."></textarea>
+    <button id="enviarBtn">Enviar</button>
+    <div id="msg" style="margin-top:1em;font-size:0.97em;"></div>
+    <hr style="margin:2em 0 1em 0;">
+    <h3 style="font-size:1.1em;">Feedbacks Enviados</h3>
+    <input id="emailFiltro" type="text" placeholder="Filtrar por email" style="width:70%;padding:0.4em;">
+    <button id="filtrarBtn" style="margin-left:0.5em;">Filtrar</button>
+    <div id="feedbacks" style="margin-top:1em;font-size:0.97em;"></div>
+  </div>
+  <script>
+    function renderFeedbacks(lista) {
+      var div = document.getElementById('feedbacks');
+      if (!lista || lista.length === 0) { div.textContent = 'Nenhum feedback encontrado.'; return; }
+      var html = '<table style="width:100%;font-size:0.97em;border-collapse:collapse;">';
+      html += '<tr><th style="text-align:left;">Data</th><th>Email</th><th>Feedback</th></tr>';
+      lista.forEach(function(row) {
+        html += '<tr><td>' + new Date(row[0]).toLocaleString() + '</td><td>' + row[1] + '</td><td>' + row[2] + '</td></tr>';
+      });
+      html += '</table>';
+      div.innerHTML = html;
+    }
+
+    function carregarTodos() {
+      google.script.run.withSuccessHandler(renderFeedbacks).getAllFeedbacks();
+    }
+
+    document.getElementById('filtrarBtn').onclick = function() {
+      var email = document.getElementById('emailFiltro').value.trim();
+      if (!email) { carregarTodos(); return; }
+      google.script.run.withSuccessHandler(renderFeedbacks).getFeedbacksByEmail(email);
+    };
+
+    carregarTodos();
+
+    document.getElementById('enviarBtn').onclick = function() {
+      var feedback = document.getElementById('feedback').value.trim();
+      var msg = document.getElementById('msg');
+      if (!feedback) { msg.textContent = 'Digite seu feedback.'; return; }
+      msg.textContent = 'Enviando...';
+      google.script.run.withSuccessHandler(function(email) {
+        google.script.run.withSuccessHandler(function() {
+          msg.textContent = 'Feedback enviado! Obrigado.';
+          document.getElementById('feedback').value = '';
+          carregarTodos();
+        }).withFailureHandler(function(e) {
+          msg.textContent = 'Erro ao enviar: ' + e.message;
+        }).saveFeedback(email, feedback);
+      }).getAuthenticatedUserEmail();
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Integrar com Colab</title>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f6f8fa; color: #222; margin: 0; padding: 2em; }
+    .container { max-width: 340px; margin: 3em auto; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px #0001; padding: 2em; }
+    h2 { margin-top: 0; font-weight: 500; }
+    label { display: block; margin-top: 1em; font-size: 0.97em; }
+    input { width: 100%; padding: 0.5em; margin-top: 0.3em; border: 1px solid #ccc; border-radius: 5px; font-size: 1em; }
+    button { margin-top: 1.5em; background: #2d8cff; color: #fff; border: none; border-radius: 5px; padding: 0.7em 1.5em; font-size: 1em; cursor: pointer; transition: background 0.2s; }
+    button:hover { background: #1a6ed8; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Integrar com Colab</h2>
+    <label>URL do Notebook
+      <input id="colabUrl" type="text" placeholder="Cole a URL do Colab">
+    </label>
+    <button id="btnColab">Integrar</button>
+    <div id="msg" style="margin-top:1em;font-size:0.97em;"></div>
+  </div>
+  <script>
+    document.getElementById('btnColab').onclick = function() {
+      var url = document.getElementById('colabUrl').value.trim();
+      var msg = document.getElementById('msg');
+      if (!url) { msg.textContent = 'Cole a URL do notebook Colab.'; return; }
+      msg.textContent = 'Acionando notebook...';
+      google.script.run.withSuccessHandler(function(res) {
+        if (res && res.startsWith('Trigger criado')) {
+          var link = res.match(/https?:\/\/\S+/);
+          msg.innerHTML = 'Notebook acionado: ' + (link ? '<a href="' + link[0] + '" target="_blank">Abrir Trigger</a>' : res);
+        } else {
+          msg.textContent = res;
+        }
+      }).withFailureHandler(function(e) {
+        msg.textContent = 'Erro: ' + e.message;
+      }).runColabNotebook(url);
+    };
+  </script>
+</body>
+</html>

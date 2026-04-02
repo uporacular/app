@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Exportar Dados</title>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #fafbfc; color: #222; margin: 0; padding: 2em; }
+    .container { max-width: 340px; margin: 3em auto; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px #0001; padding: 2em; }
+    h2 { margin-top: 0; font-weight: 500; }
+    button { background: #2d8cff; color: #fff; border: none; border-radius: 5px; padding: 0.7em 1.5em; font-size: 1em; cursor: pointer; transition: background 0.2s; }
+    button:hover { background: #1a6ed8; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Exportar Dados</h2>
+    <button id="btnCSV">Exportar para CSV</button>
+    <button id="btnSheet" style="margin-left:1em;">Exportar para Planilha</button>
+    <div id="msg" style="margin-top:1em;font-size:0.97em;"></div>
+    <div id="spinner" style="display:none;margin-top:1em;text-align:center;">
+      <span style="display:inline-block;width:24px;height:24px;border:3px solid #2d8cff33;border-top-color:#2d8cff;border-radius:50%;animation:spin .7s linear infinite;"></span>
+    </div>
+  </div>
+  <script>
+    // Exemplo de dados para exportação
+    var exemploDados = [
+      ['ID', 'Nome', 'Categoria'],
+      ['1', 'Livro A', 'Literatura'],
+      ['2', 'Livro B', 'Ciência'],
+      ['3', 'Livro C', 'História']
+    ];
+    function showSpinner(show) {
+      document.getElementById('spinner').style.display = show ? '' : 'none';
+    }
+    function showMsg(text, isError) {
+      var msg = document.getElementById('msg');
+      msg.style.color = isError ? '#f87171' : '#222';
+      msg.innerHTML = text;
+    }
+    function exportHandler(promise, successText) {
+      showSpinner(true);
+      showMsg('Exportando...', false);
+      promise
+        .withSuccessHandler(function(url) {
+          showSpinner(false);
+          showMsg(successText.replace('{url}', url), false);
+        })
+        .withFailureHandler(function(e) {
+          showSpinner(false);
+          showMsg('Erro ao exportar: ' + e.message, true);
+        });
+    }
+    document.getElementById('btnCSV').onclick = function() {
+      exportHandler(
+        google.script.run.exportToCSV(exemploDados, 'exportacao.csv'),
+        'Arquivo CSV gerado: <a href="{url}" target="_blank">Abrir</a>'
+      );
+    };
+    document.getElementById('btnSheet').onclick = function() {
+      exportHandler(
+        google.script.run.exportToSheet(exemploDados, 'Exportação Planilha'),
+        'Planilha gerada: <a href="{url}" target="_blank">Abrir</a>'
+      );
+    };
+    // Spinner CSS
+    var style = document.createElement('style');
+    style.innerHTML = '@keyframes spin { to { transform: rotate(360deg); } }';
+    document.head.appendChild(style);
+  </script>
+</body>
+</html>

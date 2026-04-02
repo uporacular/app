@@ -1,0 +1,51 @@
+<!--
+  DataIntegrator.html
+  Interface para integração e consolidação de dados de múltiplas fontes.
+  Permite combinar, cruzar e harmonizar informações para análise.
+  Elementos típicos: formulários de integração, tabelas de dados, botões de ação.
+  Autor: [Seu Nome]
+  Data de criação: [Data]
+  Última modificação: [Data]
+-->
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Data Integrator</title>
+</head>
+<body>
+  <h1>Data Integrator</h1>
+  <div style="max-width:600px;margin:2em auto;background:#fff;padding:2em;border-radius:10px;box-shadow:0 2px 8px #0001;">
+    <h3>Mesclar Datasets</h3>
+    <textarea id="ds1" rows="4" style="width:100%;" placeholder="Cole o primeiro dataset (JSON array)..."></textarea>
+    <textarea id="ds2" rows="4" style="width:100%;margin-top:1em;" placeholder="Cole o segundo dataset (JSON array)..."></textarea>
+    <input id="chave" type="text" style="width:60%;margin-top:1em;" placeholder="Chave para merge (ex: id)">
+    <button id="mergeBtn" style="margin-top:1em;">Mesclar</button>
+    <div id="mergeRes" style="margin-top:1.5em;font-size:0.97em;"></div>
+    <hr style="margin:2em 0 1em 0;">
+    <h3>Harmonizar Campos</h3>
+    <textarea id="harmoniza" rows="3" style="width:100%;" placeholder='Cole o mapeamento de campos (JSON: {"antigo":"novo"})'></textarea>
+    <button id="harmonizarBtn" style="margin-top:1em;">Harmonizar</button>
+    <div id="harmonizaRes" style="margin-top:1.5em;font-size:0.97em;"></div>
+  </div>
+  <script>
+    document.getElementById('mergeBtn').onclick = function() {
+      var ds1, ds2, key;
+      try { ds1 = JSON.parse(document.getElementById('ds1').value); } catch(e) { document.getElementById('mergeRes').textContent = 'Dataset 1 inválido.'; return; }
+      try { ds2 = JSON.parse(document.getElementById('ds2').value); } catch(e) { document.getElementById('mergeRes').textContent = 'Dataset 2 inválido.'; return; }
+      key = document.getElementById('chave').value.trim();
+      if (!key) { document.getElementById('mergeRes').textContent = 'Informe a chave para merge.'; return; }
+      google.script.run.withSuccessHandler(function(res) {
+        document.getElementById('mergeRes').textContent = JSON.stringify(res, null, 2);
+      }).mergeDatasets(ds1, ds2, key);
+    };
+    document.getElementById('harmonizarBtn').onclick = function() {
+      var ds, map;
+      try { ds = JSON.parse(document.getElementById('ds1').value); } catch(e) { document.getElementById('harmonizaRes').textContent = 'Dataset inválido.'; return; }
+      try { map = JSON.parse(document.getElementById('harmoniza').value); } catch(e) { document.getElementById('harmonizaRes').textContent = 'Mapeamento inválido.'; return; }
+      google.script.run.withSuccessHandler(function(res) {
+        document.getElementById('harmonizaRes').textContent = JSON.stringify(res, null, 2);
+      }).harmonizeRecords(ds, map);
+    };
+  </script>
+</body>
+</html>

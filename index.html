@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UpOracular | Dashboard</title>
+
+  <!-- SEO Best Practices -->
+  <meta name="description"
+    content="Dashboard principal do UpOracular, fornecendo atalhos rápidos para análise, recomendações e relatórios interdisciplinares.">
+
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+
+  <style>
+    /* CSS Variables & Vanilla CSS Base */
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --glass-border: rgba(255, 255, 255, 0.1);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-1: #38bdf8;
+      --accent-2: #818cf8;
+      --hover-glow: rgba(56, 189, 248, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-color);
+      background-image:
+        radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(129, 140, 248, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(56, 189, 248, 0.1) 0px, transparent 50%);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 3rem 1rem;
+      overflow-x: hidden;
+    }
+
+    /* Top Section */
+    .header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+      animation: fadeInDown 0.8s ease-out;
+    }
+
+    .header h1 {
+      font-weight: 600;
+      font-size: 2rem;
+      background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.02em;
+    }
+
+    .header p {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      font-weight: 300;
+      letter-spacing: 0.02em;
+    }
+
+    /* Menu Container */
+    .menu-container {
+      width: 100%;
+      max-width: 480px;
+      /* Mobile optimal, scales up centrally */
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: 28px;
+      padding: 1.5rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      animation: fadeInUp 0.8s ease-out 0.2s both;
+    }
+
+    /* 4x4 Grid */
+    .grid-4x4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-gap: 0.75rem;
+    }
+
+    /* Shortcut Items */
+    .shortcut {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      color: var(--text-main);
+      padding: 0.85rem 0.25rem;
+      border-radius: 18px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+    }
+
+    .shortcut::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 18px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .shortcut:hover,
+    .shortcut:focus {
+      transform: translateY(-5px) scale(1.02);
+      background: rgba(255, 255, 255, 0.05);
+      box-shadow: 0 10px 25px -10px var(--hover-glow);
+      outline: none;
+    }
+
+    .shortcut:hover::before,
+    .shortcut:focus::before {
+      opacity: 1;
+    }
+
+    .icon-wrapper {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: rgba(15, 23, 42, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 0.6rem;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      transition: all 0.3s ease;
+      color: var(--text-muted);
+    }
+
+    .shortcut:hover .icon-wrapper {
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(129, 140, 248, 0.2));
+      color: var(--accent-1);
+      border-color: rgba(56, 189, 248, 0.3);
+      transform: scale(1.1);
+    }
+
+    .shortcut-label {
+      font-size: 0.65rem;
+      font-weight: 500;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      width: 100%;
+      letter-spacing: 0.02em;
+      color: var(--text-muted);
+      transition: all 0.3s ease;
+    }
+
+    .shortcut:hover .shortcut-label {
+      color: var(--text-main);
+      text-shadow: 0 0 12px rgba(255, 255, 255, 0.4);
+    }
+
+    /* Animations */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+        filter: blur(5px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+        filter: blur(0);
+      }
+    }
+
+    @keyframes fadeInDown {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+        filter: blur(5px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+        filter: blur(0);
+      }
+    }
+
+    /* Staggered entry for grid items to feel dynamic and alive */
+    .shortcut:nth-child(1) {
+      animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.3s both;
+    }
+
+    .shortcut:nth-child(2) {
+      animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.35s both;
+    }
+
+    .shortcut:nth-child(3) {
+      animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.4s both;
+    }
+
+    .shortcut:nth-child(4) {
+      animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.45s both;
+    }
+
+    .shortcut:nth-child(5) {
+      animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.4s both;
+    }
+
+    .shortcut:nth-child(6) {
+      animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.45s both;
+    }
+
+    .shortcut:nth-child(7) {
+      animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.5s both;
+    }
+
+    .shortcut:nth-child(8) {
+      animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.55s both;
+    }
+
+    .shortcut:nth-child(9) {
+      animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.5s both;
+    }
+
+    .shortcut:nth-child(10) {
+      animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.55s both;
+    }
+
+    .shortcut:nth-child(11) {
+      animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.6s both;
+    }
+
+    .shortcut:nth-child(12) {
+      animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.65s both;
+    }
+
+    .shortcut:nth-child(13) {
+      animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.6s both;
+    }
+
+    .shortcut:nth-child(14) {
+      animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.65s both;
+    }
+
+    .shortcut:nth-child(15) {
+      animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.7s both;
+    }
+
+    .shortcut:nth-child(16) {
+      animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.75s both;
+    }
+
+    /* Responsiveness */
+    @media (max-width: 400px) {
+      .grid-4x4 {
+        grid-gap: 0.5rem;
+      }
+
+      .icon-wrapper {
+        width: 42px;
+        height: 42px;
+      }
+
+      .shortcut-label {
+        font-size: 0.6rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="header">
+    <h1 id="main-title">UpOracular</h1>
+    <p>Portal do Conhecimento</p>
+  </header>
+
+  <nav class="menu-container" aria-label="Menu Principal de Funcionalidades">
+    <div class="grid-4x4">
+      <!-- Linha 1 -->
+      <a href="UserAuth.html" class="shortcut" id="link-login" aria-label="Acessar Login">
+        <div class="icon-wrapper"><span class="material-symbols-outlined">login</span></div>
+        <span class="shortcut-label">Login</span>
+      </a>
+      <a href="UserProfile.html" class="shortcut" id="link-profile" aria-label="Ver Perfil do Usuário">
+        <div class="icon-wrapper"><span class="material-symbols-outlined">account_circle</span></div>
+        <span class="shortcut-label">Perfil</span>
+      </a>
+      <a href="ReadingRecord.html" class="shortcut" id="link-reading" aria-label="Acessar Registros de Leitura">
+        <div class="icon-wrapper"><span class="material-symbols-outlined">menu_book</span></div>
+        <span class="shortcut-label">Registros</span>
+      </a>
+      <a href="RecommendationEngine.html" class="shortcut" id="link-ai" aria-label="Acessar Recomendações por IA">
+        <div class="icon-wrapper"><span class="material-symbols-outlined">auto_awesome</span></div>
+        <span class="shortcut-label">Recomendar</span>
+      </a>
+
+      <!-- Linha 2 -->
+      <a href="TrailVisualizer.html" class="shortcut" id="link-maps" aria-label="Visualizar Mapas de Trilhas">
+        <div class="icon-wrapper"><span class="material-symbols-outlined">map</span></div>
+        <span class="shortcut-label">Mapas</span>
+      </a>
+      <a href="TrailSuggester.html" class="shortcut" id="link-explore" aria-label="Ver Sugestões de Trilhas">
+        <div class="icon-wrapper"><span class="material-symbols-outlined">explore</span></div>
+        <span class="shortcut-label">Sugestões</span>
+      </a>
+      <a href="InterdisciplinaryLinker.html" class="shortcut" id="link-hub"
+        aria-label="Ver Mapeamento Interdisciplinar">
+        <div class="icon-wrapper"><span class="material-symbols-outlined">hub</span></div>
+        <span class="shortcut-label">Conexões</span>
+      </a>
+      <a href="AIAnalyzer.html" class="shortcut" id="link-analyze" aria-label="Acessar Análises Detalhadas da IA">
+        <div class="icon-wrapper"><span class="material-symbols-outlined">smart_toy</span></div>
+        <span class="shortcut-label">Análise IA</span>
+      </a>
+
+      <!-- Linha 3 -->
+      <a href="ReportGenerator.html" class="shortcut" id="link-report" aria-label="Gerar Relatórios">
+        <div class="icon-wrapper"><span class="material-symbols-outlined">monitoring</span></div>
+        <span class="shortcut-label">Relatórios</span>
+      </a>
+      <a href="AnalyticsEngine.html" class="shortcut" id="link-metrics" aria-label="Ver Métricas de Engajamento">
+        <div class="icon-wrapper"><span class="material-symbols-outlined">bar_chart</span></div>
+        <span class="shortcut-label">Métricas</span>
+      </a>
+      <a href="ColabIntegrator.html" class="shortcut" id="link-colab" aria-label="Integração com Google Colab">
+        <div class="icon-wrapper"><span class="material-symbols-outlined">science</span></div>
+        <span class="shortcut-label">Colab</span>
+      </a>
+      <a href="DataExporter.html" class="shortcut" id="link-export" aria-label="Exportar Dados do Sistema">
+        <div class="icon-wrapper"><span class="material-symbols-outlined">download</span></div>
+        <span class="shortcut-label">Exportar</span>
+      </a>
+
+      <!-- Linha 4 -->
+      <a href="FeedbackCollector.html" class="shortcut" id="link-feedback" aria-label="Deixar Feedback">
+        <div class="icon-wrapper"><span class="material-symbols-outlined">forum</span></div>
+        <span class="shortcut-label">Feedback</span>
+      </a>
+      <a href="LogManager.html" class="shortcut" id="link-logs" aria-label="Ver Histórico de Logs">
+        <div class="icon-wrapper"><span class="material-symbols-outlined">history</span></div>
+        <span class="shortcut-label">Logs</span>
+      </a>
+      <a href="ConfigManager.html" class="shortcut" id="link-config" aria-label="Ver Configurações Globais">
+        <div class="icon-wrapper"><span class="material-symbols-outlined">settings</span></div>
+        <span class="shortcut-label">Sistema</span>
+      </a>
+      <a href="UserSettings.html" class="shortcut" id="link-settings" aria-label="Configurar Definições do Usuário">
+        <div class="icon-wrapper"><span class="material-symbols-outlined">tune</span></div>
+        <span class="shortcut-label">Ajustes</span>
+      </a>
+    </div>
+  </nav>
+
+</body>
+
+</html>

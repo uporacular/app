@@ -1,0 +1,31 @@
+<!--
+  ProfileUpdater.html
+  Interface para atualização de dados do perfil do usuário.
+  Permite editar informações cadastrais, preferências e dados pessoais.
+  Elementos típicos: formulários de edição, botões de salvar/cancelar, mensagens de confirmação.
+  Autor: [Seu Nome]
+  Data de criação: [Data]
+  Última modificação: [Data]
+-->
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Profile Updater</title>
+</head>
+<body>
+  <h1>Atualizar Perfil</h1>
+  <form id="profileForm" style="margin: 2em 0; max-width: 340px;">
+    <label>Nome:<br><input type="text" name="nome" required style="width: 100%; margin-bottom: 1em;"></label><br>
+    <label>Email:<br><input type="email" name="email" required style="width: 100%; margin-bottom: 1em;"></label><br>
+    <label>Preferências:<br><input type="text" name="preferencias" style="width: 100%; margin-bottom: 1em;"></label><br>
+    <button type="submit" style="background: #4a90e2; color: #fff; border: none; padding: 0.6em 1.5em; border-radius: 5px; cursor: pointer;">Salvar</button>
+  </form>
+  <div id="msg" style="color: #4a5; font-weight: 500;"></div>
+  <script>
+    document.getElementById('profileForm').onsubmit = function(e) {
+      e.preventDefault();
+      document.getElementById('msg').textContent = 'Perfil atualizado! (simulação)';
+    };
+  </script>
+</body>
+</html>

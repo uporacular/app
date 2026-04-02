@@ -1,0 +1,36 @@
+<!-- Analytics Engine UI -->
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Analytics Engine</title>
+</head>
+<body>
+  <h1>Analytics Engine</h1>
+  <div style="max-width:500px;margin:2em auto;background:#fff;padding:2em;border-radius:10px;box-shadow:0 2px 8px #0001;">
+    <h3>Análise de Números</h3>
+    <textarea id="dados" rows="4" style="width:100%;" placeholder="Cole números separados por vírgula ou espaço..."></textarea>
+    <button id="analisarBtn" style="margin-top:1em;">Analisar</button>
+    <div id="resultado" style="margin-top:1.5em;font-size:1em;"></div>
+  </div>
+  <script>
+    document.getElementById('analisarBtn').onclick = function() {
+      var txt = document.getElementById('dados').value;
+      var nums = txt.split(/[,\s]+/).map(Number).filter(function(x){return !isNaN(x);});
+      if (!nums.length) { document.getElementById('resultado').textContent = 'Insira ao menos um número.'; return; }
+      google.script.run.withSuccessHandler(function(stats) {
+        var html = '<b>Soma:</b> ' + stats.sum + '<br>';
+        html += '<b>Média:</b> ' + stats.avg + '<br>';
+        html += '<b>Mínimo:</b> ' + stats.min + '<br>';
+        html += '<b>Máximo:</b> ' + stats.max + '<br>';
+        google.script.run.withSuccessHandler(function(std) {
+          html += '<b>Desvio padrão:</b> ' + std + '<br>';
+          google.script.run.withSuccessHandler(function(trend) {
+            html += '<b>Tendência:</b> ' + trend;
+            document.getElementById('resultado').innerHTML = html;
+          }).trendReport(nums);
+        }).standardDeviation(nums);
+      }).basicStats(nums);
+    };
+  </script>
+</body>
+</html>
