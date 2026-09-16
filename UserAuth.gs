@@ -1,73 +1,114 @@
 /**
- * UserAuth.gs
- * Módulo de controle de sessão avançada no Apps Script e integração de login.
- * Validations utilizam CacheService para tokenization temporário.
+ * UserAuth.gs — Up Oracular
+ *
+ * Modulo de autenticacao por token armazenado em SessoesAuth.
+ *
+ * Historico: versoes anteriores usavam CacheService.getUserCache() e
+ * CacheService.getScriptCache(). Em deployments "Execute as: Me" o
+ * getUserCache() pertence ao dono do script, nao ao visitante — quando
+ * o desenvolvedor logava durante testes todos os usuarios entravam direto.
+ * O ScriptCache expira silenciosamente apos 6 h sem aviso.
+ * SessoesAuth e o store persistente e auditavel por instancia.
+ *
+ * Fluxo correto:
+ *   processLoginRequest(user, pass)
+ *     -> valida credenciais
+ *     -> grava token em SessoesAuth
+ *     -> devolve { success, redirectUrl }
+ *   doGet(e)
+ *     -> isUpOracularWebSessionValid_(e.parameter.token)
+ *     -> le SessoesAuth — nao CacheService
  */
 
-var AUTH_CACHE_TTL = 1800; // 30 min
-var AUTH_NS = 'AUTH_TOKEN_';
+// ---------------------------------------------------------------------------
+// Helpers sem estado (sem UserCache, sem ScriptCache para sessoes)
+// ---------------------------------------------------------------------------
 
 /**
- * Verifica rapidamente se a automação ocorre sob uma sessão de usuário real.
+ * Verifica se o script roda sob um usuario autenticado via OAuth
+ * (util para triggers e automacoes, NAO para sessao do visitante do webapp).
  * @return {boolean}
  */
 function isUserAuthenticated() {
-  var email = getAuthenticatedUserEmail();
-  return !!email;
+  return !!getAuthenticatedUserEmail();
 }
 
 /**
- * Retorna o email com segurança, fallback do Session.
- * @return {string}
+ * Retorna o e-mail do usuario OAuth ativo (owner do script em "Execute as: Me").
+ * @return {string|null}
  */
 function getAuthenticatedUserEmail() {
-  var user = Session.getActiveUser();
-  var email = user ? user.getEmail() : null;
-  if (!email) {
-    var sessionEmail = Session.getEffectiveUser().getEmail();
-    return sessionEmail || null;
+  try {
+    var email = Session.getActiveUser().getEmail();
+    return email || Session.getEffectiveUser().getEmail() || null;
+  } catch (e) {
+    return null;
   }
-  return email;
 }
 
 /**
- * Gera um token de autorização de curta duração e guarda em cache.
- * @param {string} email
- * @return {string} JWT ou token único.
- */
-function generateAuthToken(email) {
-  var token = Utilities.getUuid();
-  var cache = CacheService.getUserCache();
-  cache.put(AUTH_NS + email, token, AUTH_CACHE_TTL);
-  return token;
-}
-
-/**
- * Valida um token temporário.
- * @param {string} email
- * @param {string} token
- * @return {boolean}
- */
-function validateAuthToken(email, token) {
-  if (!email || !token) return false;
-  var cache = CacheService.getUserCache();
-  var cachedToken = cache.get(AUTH_NS + email);
-  return cachedToken === token;
-}
-
-/**
- * Encerra auth cache explicitamente.
- * @param {string} email
- */
-function invalidateAuthToken(email) {
-  var cache = CacheService.getUserCache();
-  cache.remove(AUTH_NS + email);
-}
-
-/**
- * Verifica se um request é executado pelo admin nativo.
+ * Verifica se o script roda como o proprio dono (usado em guards de admin).
  * @return {boolean}
  */
 function isAppAdmin() {
-  return Session.getEffectiveUser().getEmail() === Session.getActiveUser().getEmail();
+  try {
+    return Session.getEffectiveUser().getEmail() === Session.getActiveUser().getEmail();
+  } catch (e) {
+    return false;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Login por usuario/senha contra a aba 'Usuarios'
+// ---------------------------------------------------------------------------
+
+/**
+ * Adaptador para o autenticador canônico da frota.
+ * A credencial é lida e comparada em texto plano conforme a convenção local.
+ *
+ * @param {string} username
+ * @param {string} password
+ * @return {{ success: boolean, user?: Object, message?: string }}
+ */
+function loginUpOracularUser_(username, password) {
+  try {
+    var result = loginWithPassword(username, password);
+    return result && result.success
+      ? { success: true, user: result.user }
+      : { success: false, message: result && result.message || 'Credenciais invalidas.' };
+  } catch (error) {
+    Logger.log("Erro em loginUpOracularUser_: " + error.message);
+    throw error;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Endpoint chamado pelo Login.html via google.script.run
+// ---------------------------------------------------------------------------
+
+/**
+ * Valida credenciais, cria sessao em SessoesAuth e devolve a redirectUrl.
+ * Este e o unico ponto de entrada de login do Up Oracular.
+ *
+ * @param {string} username
+ * @param {string} password
+ * @return {{ success: boolean, redirectUrl?: string, message?: string }}
+ */
+function processLoginRequest(username, password) {
+  try {
+    var auth = loginUpOracularUser_(username, password);
+    if (!auth || !auth.success || !auth.user) {
+      return { success: false, message: auth && auth.message ? auth.message : 'Credenciais invalidas.' };
+    }
+    // loginWithPassword já persistiu o token canônico em SessoesAuth.
+    var token = auth.token;
+    if (!token) return { success: false, message: 'Não foi possível criar a sessão.' };
+    return {
+      success:     true,
+      message:     'Login efetuado com sucesso.',
+      redirectUrl: getUpOracularWebAppUrl_() + '?page=dashboard&token=' + encodeURIComponent(token)
+    };
+  } catch (error) {
+    return { success: false, message: 'Erro ao processar login: ' + (error && error.message || error) };
+  }
 }

@@ -12,25 +12,30 @@ var REPORT_FOLDER_NAME = 'UpOracular - Relatórios';
  * @return {string} URL da planilha gerada.
  */
 function generateUserReadingReport(userId) {
-  var records = getReadingRecordsByUser(userId);
-  if (!records || !records.length) return 'Nenhum registro encontrado para: ' + userId;
+  try {
+    var records = getReadingRecordsByUser_(userId);
+    if (!records || !records.length) return 'Nenhum registro encontrado para: ' + userId;
 
-  var header = [['ID', 'Usuário', 'Livro', 'Categoria', 'Data', 'Nota']];
-  var rows   = records.map(function(r) {
-    return [r.id || '', r.userId || userId, r.book || '', r.category || '', r.date || '', r.nota || ''];
-  });
-  var data = header.concat(rows);
+    var header = [['ID', 'Usuário', 'Livro', 'Categoria', 'Data', 'Nota']];
+    var rows   = records.map(function(r) {
+      return [r.id || '', r.userId || userId, r.book || '', r.category || '', r.date || '', r.nota || ''];
+    });
+    var data = header.concat(rows);
 
-  var ss    = SpreadsheetApp.create('Relatório de Leituras — ' + userId + ' — ' + _today());
-  var sheet = ss.getSheets()[0];
-  sheet.setName('Leituras');
-  sheet.getRange(1, 1, data.length, data[0].length).setValues(data);
-  _formatHeaderRow(sheet, data[0].length);
+    var ss    = SpreadsheetApp.create('Relatório de Leituras — ' + userId + ' — ' + _today());
+    var sheet = ss.getSheets()[0];
+    sheet.setName('Leituras');
+    sheet.getRange(1, 1, data.length, data[0].length).setValues(data);
+    _formatHeaderRow(sheet, data[0].length);
 
-  var url = ss.getUrl();
-  _moveReportToDrive(ss.getId());
-  _logReport(userId, 'LEITURAS_USUARIO', url);
-  return url;
+    var url = ss.getUrl();
+    _moveReportToDrive(ss.getId());
+    _logReport(userId, 'LEITURAS_USUARIO', url);
+    return url;
+  } catch (error) {
+    Logger.log("Erro em generateUserReadingReport: " + error.message);
+    throw error; // Re-lança para tratamento superior
+  }
 }
 
 /**
@@ -39,41 +44,56 @@ function generateUserReadingReport(userId) {
  * @return {string} URL da planilha.
  */
 function generateClassReport(turma) {
-  var ss        = SpreadsheetApp.getActiveSpreadsheet();
-  var perfis    = ss.getSheetByName('Perfis');
-  var leituras  = ss.getSheetByName('Leituras');
-  if (!perfis || !leituras) return 'Sheets não encontradas.';
+  try {
+    try {
+      try {
+        var ss        = getBoundSpreadsheet_();
+        var perfis    = ss.getSheetByName('Perfis');
+        var leituras  = ss.getSheetByName('Leituras');
+        if (!perfis || !leituras) return 'Sheets não encontradas.';
 
-  var perfisData   = perfis.getDataRange().getValues();
-  var leiturasData = leituras.getDataRange().getValues();
+        var perfisData   = perfis.getDataRange().getValues();
+        var leiturasData = leituras.getDataRange().getValues();
 
-  // Coleta e-mails da turma
-  var emails = {};
-  for (var i = 1; i < perfisData.length; i++) {
-    if (String(perfisData[i][0]).toUpperCase() === turma.toUpperCase()) {
-      emails[String(perfisData[i][2]).toLowerCase()] = String(perfisData[i][1]);
+        // Coleta e-mails da turma
+        var emails = {};
+        for (var i = 1; i < perfisData.length; i++) {
+          if (String(perfisData[i][0]).toUpperCase() === turma.toUpperCase()) {
+            emails[String(perfisData[i][2]).toLowerCase()] = String(perfisData[i][1]);
+          }
+        }
+
+        // Filtra leituras da turma
+        var rows = [['Nome', 'Email', 'Livro', 'Categoria', 'Data']];
+        for (var j = 1; j < leiturasData.length; j++) {
+          var email = String(leiturasData[j][1]).toLowerCase();
+          if (emails[email]) {
+            rows.push([emails[email], email, leiturasData[j][2], leiturasData[j][3], leiturasData[j][4]]);
+          }
+        }
+
+        var report  = SpreadsheetApp.create('Relatório Turma ' + turma + ' — ' + _today());
+        var rSheet  = report.getSheets()[0];
+        rSheet.setName('Turma ' + turma);
+        rSheet.getRange(1, 1, rows.length, rows[0].length).setValues(rows);
+        _formatHeaderRow(rSheet, rows[0].length);
+
+        var url = report.getUrl();
+        _moveReportToDrive(report.getId());
+        _logReport('turma:' + turma, 'TURMA', url);
+        return url;
+      } catch (error) {
+        Logger.log("Erro em generateClassReport: " + error.message);
+        throw error; // Re-lança para tratamento superior
+      }
+    } catch (error) {
+      Logger.log("Erro em generateClassReport: " + error.message);
+      throw error;
     }
+  } catch (error) {
+    Logger.log("Erro em generateClassReport: " + error.message);
+    throw error;
   }
-
-  // Filtra leituras da turma
-  var rows = [['Nome', 'Email', 'Livro', 'Categoria', 'Data']];
-  for (var j = 1; j < leiturasData.length; j++) {
-    var email = String(leiturasData[j][1]).toLowerCase();
-    if (emails[email]) {
-      rows.push([emails[email], email, leiturasData[j][2], leiturasData[j][3], leiturasData[j][4]]);
-    }
-  }
-
-  var report  = SpreadsheetApp.create('Relatório Turma ' + turma + ' — ' + _today());
-  var rSheet  = report.getSheets()[0];
-  rSheet.setName('Turma ' + turma);
-  rSheet.getRange(1, 1, rows.length, rows[0].length).setValues(rows);
-  _formatHeaderRow(rSheet, rows[0].length);
-
-  var url = report.getUrl();
-  _moveReportToDrive(report.getId());
-  _logReport('turma:' + turma, 'TURMA', url);
-  return url;
 }
 
 /**
@@ -83,9 +103,24 @@ function generateClassReport(turma) {
  * @param {string} url
  */
 function _logReport(userId, tipo, url) {
-  var ss    = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName('ReportLog') || ss.insertSheet('ReportLog');
-  sheet.appendRow([new Date(), userId, tipo, url]);
+  try {
+    try {
+      try {
+        var ss    = getBoundSpreadsheet_();
+        var sheet = ss.getSheetByName('ReportLog') || ss.insertSheet('ReportLog');
+        sheet.appendRow([new Date(), userId, tipo, url]);
+      } catch (error) {
+        Logger.log("Erro em _logReport: " + error.message);
+        throw error; // Re-lança para tratamento superior
+      }
+    } catch (error) {
+      Logger.log("Erro em _logReport: " + error.message);
+      throw error;
+    }
+  } catch (error) {
+    Logger.log("Erro em _logReport: " + error.message);
+    throw error;
+  }
 }
 
 /**
@@ -107,7 +142,17 @@ function _moveReportToDrive(fileId) {
  * @param {number} numCols
  */
 function _formatHeaderRow(sheet, numCols) {
-  sheet.getRange(1, 1, 1, numCols).setFontWeight('bold').setBackground('#E8F0FE');
+  try {
+    try {
+      sheet.getRange(1, 1, 1, numCols).setFontWeight('bold').setBackground('#E8F0FE');
+    } catch (error) {
+      Logger.log("Erro em _formatHeaderRow: " + error.message);
+      throw error;
+    }
+  } catch (error) {
+    Logger.log("Erro em _formatHeaderRow: " + error.message);
+    throw error;
+  }
 }
 
 /**

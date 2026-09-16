@@ -43,16 +43,21 @@ function syncSheetWithColab(sheetId, colabFolderId) {
  * @return {string} Status do processamento.
  */
 function receiveColabResults(resultFileId) {
-	try {
-		var file = DriveApp.getFileById(resultFileId);
-		var content = file.getBlob().getDataAsString();
-		// Exemplo: processar CSV e salvar em uma planilha
-		var rows = Utilities.parseCsv(content);
-		if (!rows || rows.length === 0) return 'Arquivo de resultado vazio.';
-		var sheet = SpreadsheetApp.create('Resultados Colab');
-		sheet.getSheets()[0].getRange(1, 1, rows.length, rows[0].length).setValues(rows);
-		return 'Resultados processados e salvos em nova planilha.';
-	} catch (e) {
-		return 'Erro ao processar resultados: ' + e.message;
-	}
+  try {
+  	try {
+  		var file = DriveApp.getFileById(resultFileId);
+  		var content = file.getBlob().getDataAsString();
+  		// Exemplo: processar CSV e salvar em uma planilha
+  		var rows = Utilities.parseCsv(content);
+  		if (!rows || rows.length === 0) return 'Arquivo de resultado vazio.';
+  		var sheet = SpreadsheetApp.create('Resultados Colab');
+  		sheet.getSheets()[0].getRange(1, 1, rows.length, rows[0].length).setValues(rows);
+  		return 'Resultados processados e salvos em nova planilha.';
+  	} catch (e) {
+  		return 'Erro ao processar resultados: ' + e.message;
+  	}
+  } catch (error) {
+    Logger.log("Erro em receiveColabResults: " + error.message);
+    throw error; // Re-lança para tratamento superior
+  }
 }

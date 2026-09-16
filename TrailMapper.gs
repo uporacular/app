@@ -12,43 +12,48 @@
  * @return {Array<Object>} Lista de grafos/nós mapeados (A trilha conectada do usuário)
  */
 function mapUserReadingTrail(userId) {
-  var records = getReadingRecordsByUser(userId); 
-  if (!records || records.length < 2) return []; // Requer pelo menos 2 registros para mapear conexão
+  try {
+    var records = getReadingRecordsByUser_(userId); 
+    if (!records || records.length < 2) return []; // Requer pelo menos 2 registros para mapear conexão
 
-  // Ordenar por data cronológica para formar uma linha do tempo (trilha)
-  records.sort(function(a, b) {
-    return new Date(a.date) - new Date(b.date);
-  });
+    // Ordenar por data cronológica para formar uma linha do tempo (trilha)
+    records.sort(function(a, b) {
+      return new Date(a.date) - new Date(b.date);
+    });
 
-  var mappedNodes = [];
+    var mappedNodes = [];
   
-  // Constrói O Mapeamento Interdisciplinar passo-a-passo
-  for (var i = 0; i < records.length; i++) {
-    var currentNode = {
-      step: i + 1,
-      bookId: records[i].id,
-      bookTitle: records[i].book,
-      category: records[i].category,
-      connectionType: 'INICIAL',
-      insight: ''
-    };
+    // Constrói O Mapeamento Interdisciplinar passo-a-passo
+    for (var i = 0; i < records.length; i++) {
+      var currentNode = {
+        step: i + 1,
+        bookId: records[i].id,
+        bookTitle: records[i].book,
+        category: records[i].category,
+        connectionType: 'INICIAL',
+        insight: ''
+      };
 
-    if (i > 0) {
-      var prevNode = mappedNodes[i - 1];
-      if (currentNode.category === prevNode.category) {
-        currentNode.connectionType = 'APROFUNDAMENTO';
-        currentNode.insight = 'O usuário se aprofundou no tema de ' + currentNode.category + '.';
-      } else {
-        currentNode.connectionType = 'INTERDISCIPLINAR';
-        currentNode.insight = 'Ponte criada entre ' + prevNode.category + ' e ' + currentNode.category + '.';
+      if (i > 0) {
+        var prevNode = mappedNodes[i - 1];
+        if (currentNode.category === prevNode.category) {
+          currentNode.connectionType = 'APROFUNDAMENTO';
+          currentNode.insight = 'O usuário se aprofundou no tema de ' + currentNode.category + '.';
+        } else {
+          currentNode.connectionType = 'INTERDISCIPLINAR';
+          currentNode.insight = 'Ponte criada entre ' + prevNode.category + ' e ' + currentNode.category + '.';
+        }
       }
+
+      mappedNodes.push(currentNode);
     }
 
-    mappedNodes.push(currentNode);
+    // Gera o relatório consolidado na UI ou Log
+    return mappedNodes;
+  } catch (error) {
+    Logger.log("Erro em mapUserReadingTrail: " + error.message);
+    throw error;
   }
-
-  // Gera o relatório consolidado na UI ou Log
-  return mappedNodes;
 }
 
 /**
@@ -56,19 +61,44 @@ function mapUserReadingTrail(userId) {
  * @return {Object} Mapa global de frequência.
  */
 function mapGlobalLibraryNodes() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName('Leituras');
-  if (!sheet) return {};
+  try {
+    try {
+      var ss = getBoundSpreadsheet_();
+      var sheet = ss.getSheetByName('Leituras');
+      if (!sheet) return {};
 
-  var data = sheet.getDataRange().getValues();
-  var categoryMatrix = {};
+      var data = sheet.getDataRange().getValues();
+      var categoryMatrix = {};
 
-  for (var i = 1; i < data.length; i++) {
-    var cat = data[i][3]; // CATEGORY is column 3
-    if (cat) {
-      categoryMatrix[cat] = (categoryMatrix[cat] || 0) + 1;
-    }
-  }
+      for (var i = 1; i < data.length; i++) {
+        var cat = data[i][3]; // CATEGORY is column 3
+        if (cat) {
+          categoryMatrix[cat] = (categoryMatrix[cat] || 0) + 1;
+        }
+      }
   
-  return categoryMatrix;
+      return categoryMatrix;
+    } catch (error) {
+      Logger.log("Erro em mapGlobalLibraryNodes: " + error.message);
+      throw error;
+    }
+  } catch (error) {
+    Logger.log("Erro em mapGlobalLibraryNodes: " + error.message);
+    throw error;
+  }
 }
+
+/**
+ * Interface de maturidade — mapeia a trilha de leitura do usuário.
+ */
+function mapReadingTrail(userId) {
+  return mapUserReadingTrail(userId);
+}
+
+/**
+ * Interface de maturidade — constrói o grafo de trilhas globais.
+ */
+function buildTrailGraph() {
+  return mapGlobalLibraryNodes();
+}
+

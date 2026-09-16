@@ -6,7 +6,7 @@
 
 var SESSION_TTL     = 3600;  // 1 hora em segundos
 var SESSION_PREFIX  = 'SID_';
-var LOG_SHEET       = 'SessionLog';
+var SESSION_LOG_SHEET = 'SessionLog';
 
 /**
  * Cria uma sessão autenticada para o usuário.
@@ -15,18 +15,23 @@ var LOG_SHEET       = 'SessionLog';
  * @return {string} sessionId
  */
 function createSession(email) {
-  var sessionId = Utilities.getUuid();
-  var cache     = CacheService.getUserCache();
-  var payload   = JSON.stringify({ email: email, createdAt: new Date().toISOString() });
+  try {
+    var sessionId = Utilities.getUuid();
+    var cache     = CacheService.getUserCache();
+    var payload   = JSON.stringify({ email: email, createdAt: new Date().toISOString() });
 
-  cache.put(SESSION_PREFIX + sessionId, payload, SESSION_TTL);
+    cache.put(SESSION_PREFIX + sessionId, payload, SESSION_TTL);
 
-  // Persistência resiliente via PropertiesService
-  var props = PropertiesService.getScriptProperties();
-  props.setProperty(SESSION_PREFIX + sessionId, payload);
+    // Persistência resiliente via PropertiesService
+    var props = PropertiesService.getScriptProperties();
+    props.setProperty(SESSION_PREFIX + sessionId, payload);
 
-  _logSessionEvent(email, 'CREATE', sessionId);
-  return sessionId;
+    _logSessionEvent(email, 'CREATE', sessionId);
+    return sessionId;
+  } catch (error) {
+    Logger.log("Erro em createSession: " + error.message);
+    throw error;
+  }
 }
 
 /**
@@ -35,19 +40,24 @@ function createSession(email) {
  * @return {boolean}
  */
 function isSessionActive(sessionId) {
-  var cache   = CacheService.getUserCache();
-  var payload = cache.get(SESSION_PREFIX + sessionId);
-  if (payload) return true;
+  try {
+    var cache   = CacheService.getUserCache();
+    var payload = cache.get(SESSION_PREFIX + sessionId);
+    if (payload) return true;
 
-  // Fallback: verifica PropertiesService
-  var props    = PropertiesService.getScriptProperties();
-  var persisted = props.getProperty(SESSION_PREFIX + sessionId);
-  if (persisted) {
-    // Re-hidrata o cache
-    cache.put(SESSION_PREFIX + sessionId, persisted, SESSION_TTL);
-    return true;
+    // Fallback: verifica PropertiesService
+    var props    = PropertiesService.getScriptProperties();
+    var persisted = props.getProperty(SESSION_PREFIX + sessionId);
+    if (persisted) {
+      // Re-hidrata o cache
+      cache.put(SESSION_PREFIX + sessionId, persisted, SESSION_TTL);
+      return true;
+    }
+    return false;
+  } catch (error) {
+    Logger.log("Erro em isSessionActive: " + error.message);
+    throw error;
   }
-  return false;
 }
 
 /**
@@ -56,14 +66,19 @@ function isSessionActive(sessionId) {
  * @return {string|null}
  */
 function getSessionEmail(sessionId) {
-  var cache   = CacheService.getUserCache();
-  var payload = cache.get(SESSION_PREFIX + sessionId);
-  if (!payload) {
-    var props = PropertiesService.getScriptProperties();
-    payload   = props.getProperty(SESSION_PREFIX + sessionId);
+  try {
+    var cache   = CacheService.getUserCache();
+    var payload = cache.get(SESSION_PREFIX + sessionId);
+    if (!payload) {
+      var props = PropertiesService.getScriptProperties();
+      payload   = props.getProperty(SESSION_PREFIX + sessionId);
+    }
+    if (!payload) return null;
+    return JSON.parse(payload).email;
+  } catch (error) {
+    Logger.log("Erro em getSessionEmail: " + error.message);
+    throw error;
   }
-  if (!payload) return null;
-  return JSON.parse(payload).email;
 }
 
 /**
@@ -72,16 +87,26 @@ function getSessionEmail(sessionId) {
  * @return {boolean} true se renovada com sucesso.
  */
 function renewSession(sessionId) {
-  var email = getSessionEmail(sessionId);
-  if (!email) return false;
+  try {
+    try {
+      var email = getSessionEmail(sessionId);
+      if (!email) return false;
 
-  var cache   = CacheService.getUserCache();
-  var payload = JSON.stringify({ email: email, renewedAt: new Date().toISOString() });
-  cache.put(SESSION_PREFIX + sessionId, payload, SESSION_TTL);
+      var cache   = CacheService.getUserCache();
+      var payload = JSON.stringify({ email: email, renewedAt: new Date().toISOString() });
+      cache.put(SESSION_PREFIX + sessionId, payload, SESSION_TTL);
 
-  var props = PropertiesService.getScriptProperties();
-  props.setProperty(SESSION_PREFIX + sessionId, payload);
-  return true;
+      var props = PropertiesService.getScriptProperties();
+      props.setProperty(SESSION_PREFIX + sessionId, payload);
+      return true;
+    } catch (error) {
+      Logger.log("Erro em renewSession: " + error.message);
+      throw error;
+    }
+  } catch (error) {
+    Logger.log("Erro em renewSession: " + error.message);
+    throw error;
+  }
 }
 
 /**
@@ -90,16 +115,21 @@ function renewSession(sessionId) {
  * @return {boolean}
  */
 function endSession(sessionId) {
-  var email = getSessionEmail(sessionId);
+  try {
+    var email = getSessionEmail(sessionId);
 
-  var cache = CacheService.getUserCache();
-  cache.remove(SESSION_PREFIX + sessionId);
+    var cache = CacheService.getUserCache();
+    cache.remove(SESSION_PREFIX + sessionId);
 
-  var props = PropertiesService.getScriptProperties();
-  props.deleteProperty(SESSION_PREFIX + sessionId);
+    var props = PropertiesService.getScriptProperties();
+    props.deleteProperty(SESSION_PREFIX + sessionId);
 
-  if (email) _logSessionEvent(email, 'END', sessionId);
-  return true;
+    if (email) _logSessionEvent(email, 'END', sessionId);
+    return true;
+  } catch (error) {
+    Logger.log("Erro em endSession: " + error.message);
+    throw error;
+  }
 }
 
 /**
@@ -110,8 +140,8 @@ function endSession(sessionId) {
  */
 function _logSessionEvent(email, action, sessionId) {
   try {
-    var ss    = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getSheetByName(LOG_SHEET) || ss.insertSheet(LOG_SHEET);
+    var ss    = getBoundSpreadsheet_();
+    var sheet = ss.getSheetByName(SESSION_LOG_SHEET) || ss.insertSheet(SESSION_LOG_SHEET);
     sheet.appendRow([new Date(), email, action, sessionId]);
   } catch (e) {
     // Log silencioso — não interrompe o fluxo principal

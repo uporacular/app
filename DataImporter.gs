@@ -13,14 +13,19 @@ var IMPORT_LOG_SHEET = 'ImportLog';
  * @return {Array<Array>}
  */
 function importFromCSV(fileId) {
-  var file    = DriveApp.getFileById(fileId);
-  var content = file.getBlob().getDataAsString('UTF-8');
-  var parsed  = Utilities.parseCsv(content);
-  var cleaned = parsed.filter(function(row) {
-    return row.some(function(cell) { return cell && cell.trim() !== ''; });
-  });
-  _logImport(fileId, 'CSV', cleaned.length);
-  return cleaned;
+  try {
+    var file    = DriveApp.getFileById(fileId);
+    var content = file.getBlob().getDataAsString('UTF-8');
+    var parsed  = Utilities.parseCsv(content);
+    var cleaned = parsed.filter(function(row) {
+      return row.some(function(cell) { return cell && cell.trim() !== ''; });
+    });
+    _logImport(fileId, 'CSV', cleaned.length);
+    return cleaned;
+  } catch (error) {
+    Logger.log("Erro em importFromCSV: " + error.message);
+    throw error;
+  }
 }
 
 /**
@@ -30,12 +35,17 @@ function importFromCSV(fileId) {
  * @return {Array<Array>}
  */
 function importFromSheet(sheetId, sheetName) {
-  var ss    = SpreadsheetApp.openById(sheetId);
-  var sheet = sheetName ? ss.getSheetByName(sheetName) : ss.getSheets()[0];
-  if (!sheet) return [];
-  var data  = sheet.getDataRange().getValues();
-  _logImport(sheetId, 'SHEETS', data.length);
-  return data;
+  try {
+    var ss    = SpreadsheetApp.openById(sheetId);
+    var sheet = sheetName ? ss.getSheetByName(sheetName) : ss.getSheets()[0];
+    if (!sheet) return [];
+    var data  = sheet.getDataRange().getValues();
+    _logImport(sheetId, 'SHEETS', data.length);
+    return data;
+  } catch (error) {
+    Logger.log("Erro em importFromSheet: " + error.message);
+    throw error;
+  }
 }
 
 /**
@@ -69,15 +79,31 @@ function importFromJson(url, options) {
  * @return {number} Linhas escritas.
  */
 function importCsvToSheet(fileId, sheetName) {
-  var data  = importFromCSV(fileId);
-  if (!data || !data.length) return 0;
+  try {
+    var data  = importFromCSV(fileId);
+    if (!data || !data.length) return 0;
 
-  var ss    = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(sheetName) || ss.insertSheet(sheetName);
-  sheet.clearContents();
-  sheet.getRange(1, 1, data.length, data[0].length).setValues(data);
-  CacheService.getScriptCache().remove('SC_DATA_' + sheetName);
-  return data.length;
+    var ss    = getBoundSpreadsheet_();
+    var sheet = ss.getSheetByName(sheetName) || ss.insertSheet(sheetName);
+    sheet.clearContents();
+    sheet.getRange(1, 1, data.length, data[0].length).setValues(data);
+    CacheService.getScriptCache().remove('SC_DATA_' + sheetName);
+    return data.length;
+  } catch (error) {
+    Logger.log("Erro em importCsvToSheet: " + error.message);
+    throw error;
+  }
+}
+
+/**
+ * Importa o CSV do acervo escolar e grava uma aba normalizada para busca,
+ * recomendacao e inter-referenciamento.
+ * @param {string} fileId ID do arquivo CSV no Drive.
+ * @param {string} sheetName Opcional. Padrao: Acervo.
+ * @return {Object} resumo da importacao.
+ */
+function importCsvToAcervo(fileId, sheetName) {
+  return importAcervoCsvToSheet(fileId, sheetName || ACERVO_SHEET_NAME);
 }
 
 /**
@@ -88,8 +114,8 @@ function importCsvToSheet(fileId, sheetName) {
  */
 function _logImport(source, type, rowCount) {
   try {
-    var ss    = SpreadsheetApp.getActiveSpreadsheet();
+    var ss    = getBoundSpreadsheet_();
     var sheet = ss.getSheetByName(IMPORT_LOG_SHEET) || ss.insertSheet(IMPORT_LOG_SHEET);
-    sheet.appendRow([new Date(), type, source, rowCount, Session.getActiveUser().getEmail()]);
+    appendSheetRow(IMPORT_LOG_SHEET, [new Date(), type, source, rowCount, Session.getActiveUser().getEmail()]);
   } catch (e) { /* falha silenciosa */ }
 }

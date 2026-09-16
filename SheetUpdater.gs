@@ -14,15 +14,20 @@
  * @return {boolean} Sucesso
  */
 function updateCell(sheetName, row, col, value) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(sheetName);
-  if (!sheet) {
-    Logger.log('SheetUpdater.updateCell: aba "' + sheetName + '" não encontrada.');
-    return false;
+  try {
+    var ss = getBoundSpreadsheet_();
+    var sheet = ss.getSheetByName(sheetName);
+    if (!sheet) {
+      LoggerService.info('SheetUpdater.updateCell: aba "' + sheetName + '" não encontrada.');
+      return false;
+    }
+    sheet.getRange(row, col).setValue(value);
+    _invalidateCacheForSheet_(sheetName);
+    return true;
+  } catch (error) {
+    Logger.log("Erro em updateCell: " + error.message);
+    throw error; // Re-lança para tratamento superior
   }
-  sheet.getRange(row, col).setValue(value);
-  _invalidateCacheForSheet_(sheetName);
-  return true;
 }
 
 /**
@@ -34,12 +39,27 @@ function updateCell(sheetName, row, col, value) {
  * @return {boolean} Sucesso
  */
 function batchUpdate(sheetName, startRow, startCol, values) {
-  if (!values || values.length === 0) return false;
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(sheetName) || ss.insertSheet(sheetName);
-  sheet.getRange(startRow, startCol, values.length, values[0].length).setValues(values);
-  _invalidateCacheForSheet_(sheetName);
-  return true;
+  try {
+    try {
+      try {
+        if (!values || values.length === 0) return false;
+        var ss = getBoundSpreadsheet_();
+        var sheet = ss.getSheetByName(sheetName) || ss.insertSheet(sheetName);
+        sheet.getRange(startRow, startCol, values.length, values[0].length).setValues(values);
+        _invalidateCacheForSheet_(sheetName);
+        return true;
+      } catch (error) {
+        Logger.log("Erro em batchUpdate: " + error.message);
+        throw error; // Re-lança para tratamento superior
+      }
+    } catch (error) {
+      Logger.log("Erro em batchUpdate: " + error.message);
+      throw error;
+    }
+  } catch (error) {
+    Logger.log("Erro em batchUpdate: " + error.message);
+    throw error;
+  }
 }
 
 /**
@@ -52,21 +72,36 @@ function batchUpdate(sheetName, startRow, startCol, values) {
  * @return {{ action: 'updated'|'inserted', row: number }}
  */
 function upsertRow(sheetName, keyCol, keyValue, rowData) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(sheetName) || ss.insertSheet(sheetName);
-  var data = sheet.getDataRange().getValues();
+  try {
+    try {
+      try {
+        var ss = getBoundSpreadsheet_();
+        var sheet = ss.getSheetByName(sheetName) || ss.insertSheet(sheetName);
+        var data = sheet.getDataRange().getValues();
 
-  for (var i = 1; i < data.length; i++) {
-    if (String(data[i][keyCol - 1]) === String(keyValue)) {
-      sheet.getRange(i + 1, 1, 1, rowData.length).setValues([rowData]);
-      _invalidateCacheForSheet_(sheetName);
-      return { action: 'updated', row: i + 1 };
+        for (var i = 1; i < data.length; i++) {
+          if (String(data[i][keyCol - 1]) === String(keyValue)) {
+            sheet.getRange(i + 1, 1, 1, rowData.length).setValues([rowData]);
+            _invalidateCacheForSheet_(sheetName);
+            return { action: 'updated', row: i + 1 };
+          }
+        }
+
+        sheet.appendRow(rowData);
+        _invalidateCacheForSheet_(sheetName);
+        return { action: 'inserted', row: sheet.getLastRow() };
+      } catch (error) {
+        Logger.log("Erro em upsertRow: " + error.message);
+        throw error; // Re-lança para tratamento superior
+      }
+    } catch (error) {
+      Logger.log("Erro em upsertRow: " + error.message);
+      throw error;
     }
+  } catch (error) {
+    Logger.log("Erro em upsertRow: " + error.message);
+    throw error;
   }
-
-  sheet.appendRow(rowData);
-  _invalidateCacheForSheet_(sheetName);
-  return { action: 'inserted', row: sheet.getLastRow() };
 }
 
 /**
@@ -77,19 +112,34 @@ function upsertRow(sheetName, keyCol, keyValue, rowData) {
  * @return {boolean} true se encontrou e removeu
  */
 function deleteRowByKey(sheetName, keyCol, keyValue) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(sheetName);
-  if (!sheet) return false;
+  try {
+    try {
+      try {
+        var ss = getBoundSpreadsheet_();
+        var sheet = ss.getSheetByName(sheetName);
+        if (!sheet) return false;
 
-  var data = sheet.getDataRange().getValues();
-  for (var i = data.length - 1; i >= 1; i--) {
-    if (String(data[i][keyCol - 1]) === String(keyValue)) {
-      sheet.deleteRow(i + 1);
-      _invalidateCacheForSheet_(sheetName);
-      return true;
+        var data = sheet.getDataRange().getValues();
+        for (var i = data.length - 1; i >= 1; i--) {
+          if (String(data[i][keyCol - 1]) === String(keyValue)) {
+            sheet.deleteRow(i + 1);
+            _invalidateCacheForSheet_(sheetName);
+            return true;
+          }
+        }
+        return false;
+      } catch (error) {
+        Logger.log("Erro em deleteRowByKey: " + error.message);
+        throw error; // Re-lança para tratamento superior
+      }
+    } catch (error) {
+      Logger.log("Erro em deleteRowByKey: " + error.message);
+      throw error;
     }
+  } catch (error) {
+    Logger.log("Erro em deleteRowByKey: " + error.message);
+    throw error;
   }
-  return false;
 }
 
 /**
@@ -99,13 +149,28 @@ function deleteRowByKey(sheetName, keyCol, keyValue) {
  * @return {number} Número de linhas inseridas
  */
 function appendRows(sheetName, rows) {
-  if (!rows || rows.length === 0) return 0;
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(sheetName) || ss.insertSheet(sheetName);
-  var lastRow = sheet.getLastRow();
-  sheet.getRange(lastRow + 1, 1, rows.length, rows[0].length).setValues(rows);
-  _invalidateCacheForSheet_(sheetName);
-  return rows.length;
+  try {
+    try {
+      try {
+        if (!rows || rows.length === 0) return 0;
+        var ss = getBoundSpreadsheet_();
+        var sheet = ss.getSheetByName(sheetName) || ss.insertSheet(sheetName);
+        var lastRow = sheet.getLastRow();
+        sheet.getRange(lastRow + 1, 1, rows.length, rows[0].length).setValues(rows);
+        _invalidateCacheForSheet_(sheetName);
+        return rows.length;
+      } catch (error) {
+        Logger.log("Erro em appendRows: " + error.message);
+        throw error; // Re-lança para tratamento superior
+      }
+    } catch (error) {
+      Logger.log("Erro em appendRows: " + error.message);
+      throw error;
+    }
+  } catch (error) {
+    Logger.log("Erro em appendRows: " + error.message);
+    throw error;
+  }
 }
 
 /**
@@ -113,12 +178,17 @@ function appendRows(sheetName, rows) {
  * @param {string} sheetName
  */
 function _invalidateCacheForSheet_(sheetName) {
-  var cache = CacheService.getScriptCache();
-  var keysToRemove = [
-    'GLOBAL_TRENDS',
-    'PATTERNS_*',
-    sheetName + '_DATA'
-  ];
-  // CacheService não suporta wildcard — remove as chaves conhecidas
-  cache.removeAll(keysToRemove.filter(function(k) { return k.indexOf('*') === -1; }));
+  try {
+    var cache = CacheService.getScriptCache();
+    var keysToRemove = [
+      'GLOBAL_TRENDS',
+      'PATTERNS_*',
+      sheetName + '_DATA'
+    ];
+    // CacheService não suporta wildcard — remove as chaves conhecidas
+    cache.removeAll(keysToRemove.filter(function(k) { return k.indexOf('*') === -1; }));
+  } catch (error) {
+    Logger.log("Erro em _invalidateCacheForSheet_: " + error.message);
+    throw error;
+  }
 }

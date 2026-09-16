@@ -16,9 +16,14 @@ var LOG_SHEET = 'Logs';
  * @param {string} message
  */
 function addLog(message) {
-	var ss = SpreadsheetApp.getActiveSpreadsheet();
-	var sheet = ss.getSheetByName(LOG_SHEET) || ss.insertSheet(LOG_SHEET);
-	sheet.appendRow([new Date(), message]);
+  try {
+  	var ss = getBoundSpreadsheet_();
+  	var sheet = ss.getSheetByName(LOG_SHEET) || ss.insertSheet(LOG_SHEET);
+  	sheet.appendRow([new Date(), message]);
+  } catch (error) {
+    Logger.log("Erro em addLog: " + error.message);
+    throw error; // Re-lança para tratamento superior
+  }
 }
 
 /**
@@ -27,7 +32,7 @@ function addLog(message) {
  * @return {Array<string>}
  */
 function getRecentLogs(limit) {
-	var ss = SpreadsheetApp.getActiveSpreadsheet();
+	var ss = getBoundSpreadsheet_();
 	var sheet = ss.getSheetByName(LOG_SHEET);
 	if (!sheet) return [];
 	var data = sheet.getDataRange().getValues();

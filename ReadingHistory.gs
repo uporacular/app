@@ -13,33 +13,43 @@ var HISTORY_CACHE_TTL = 1200; // 20 minutos
  * @return {Array<Object>} Ex: [{ periodo: '2025-11', total: 3, livros: [...] }]
  */
 function getReadingHistoryTimeline(userId) {
-  var cache = CacheService.getScriptCache();
-  var cacheKey = 'TIMELINE_' + userId;
-  var cached = cache.get(cacheKey);
-  if (cached) return JSON.parse(cached);
+  try {
+    try {
+      var cache = CacheService.getScriptCache();
+      var cacheKey = 'TIMELINE_' + userId;
+      var cached = cache.get(cacheKey);
+      if (cached) return JSON.parse(cached);
 
-  var records = getReadingRecordsByUser(userId);
-  if (!records || records.length === 0) return [];
+      var records = getReadingRecordsByUser_(userId);
+      if (!records || records.length === 0) return [];
 
-  // Agrupa por período Ano-Mês
-  var grouped = {};
-  records.forEach(function(r) {
-    var d = r.date ? new Date(r.date) : null;
-    var periodo = d && !isNaN(d)
-      ? d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0')
-      : 'Sem data';
-    if (!grouped[periodo]) grouped[periodo] = { periodo: periodo, total: 0, livros: [] };
-    grouped[periodo].total++;
-    grouped[periodo].livros.push(r.book || 'Sem título');
-  });
+      // Agrupa por período Ano-Mês
+      var grouped = {};
+      records.forEach(function(r) {
+        var d = r.date ? new Date(r.date) : null;
+        var periodo = d && !isNaN(d)
+          ? d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0')
+          : 'Sem data';
+        if (!grouped[periodo]) grouped[periodo] = { periodo: periodo, total: 0, livros: [] };
+        grouped[periodo].total++;
+        grouped[periodo].livros.push(r.book || 'Sem título');
+      });
 
-  // Ordena cronologicamente descrescente
-  var timeline = Object.values(grouped).sort(function(a, b) {
-    return b.periodo.localeCompare(a.periodo);
-  });
+      // Ordena cronologicamente descrescente
+      var timeline = Object.values(grouped).sort(function(a, b) {
+        return b.periodo.localeCompare(a.periodo);
+      });
 
-  cache.put(cacheKey, JSON.stringify(timeline), HISTORY_CACHE_TTL);
-  return timeline;
+      cache.put(cacheKey, JSON.stringify(timeline), HISTORY_CACHE_TTL);
+      return timeline;
+    } catch (error) {
+      Logger.log("Erro em getReadingHistoryTimeline: " + error.message);
+      throw error;
+    }
+  } catch (error) {
+    Logger.log("Erro em getReadingHistoryTimeline: " + error.message);
+    throw error;
+  }
 }
 
 /**
@@ -49,63 +59,73 @@ function getReadingHistoryTimeline(userId) {
  *                    readingStreak, busiestMonth, avgBooksPerMonth }
  */
 function getReadingHistoryStats(userId) {
-  var cache = CacheService.getScriptCache();
-  var cacheKey = 'STATS_' + userId;
-  var cached = cache.get(cacheKey);
-  if (cached) return JSON.parse(cached);
+  try {
+    try {
+      var cache = CacheService.getScriptCache();
+      var cacheKey = 'STATS_' + userId;
+      var cached = cache.get(cacheKey);
+      if (cached) return JSON.parse(cached);
 
-  var records = getReadingRecordsByUser(userId) || [];
-  if (records.length === 0) {
-    return { totalBooks: 0, averageRating: 0, recentBooks: [],
-             categoriesRead: {}, readingStreak: 0, busiestMonth: null, avgBooksPerMonth: 0 };
-  }
+      var records = getReadingRecordsByUser_(userId) || [];
+      if (records.length === 0) {
+        return { totalBooks: 0, averageRating: 0, recentBooks: [],
+                 categoriesRead: {}, readingStreak: 0, busiestMonth: null, avgBooksPerMonth: 0 };
+      }
 
-  var total = records.length;
-  var sumRating = 0;
-  var countRated = 0;
-  var categoriesRead = {};
+      var total = records.length;
+      var sumRating = 0;
+      var countRated = 0;
+      var categoriesRead = {};
 
-  records.forEach(function(r) {
-    if (r.rating && !isNaN(r.rating)) {
-      sumRating += Number(r.rating);
-      countRated++;
+      records.forEach(function(r) {
+        if (r.rating && !isNaN(r.rating)) {
+          sumRating += Number(r.rating);
+          countRated++;
+        }
+        var cat = r.category || 'Sem Categoria';
+        categoriesRead[cat] = (categoriesRead[cat] || 0) + 1;
+      });
+
+      // Mês mais produtivo
+      var timeline = getReadingHistoryTimeline(userId);
+      var busiestMonth = timeline.length > 0
+        ? timeline.reduce(function(a, b) { return b.total > a.total ? b : a; }, timeline[0])
+        : null;
+
+      // Média de livros por mês (últimos 12 meses)
+      var twelveMonthsAgo = new Date();
+      twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+      var recentCount = records.filter(function(r) {
+        return r.date && new Date(r.date) >= twelveMonthsAgo;
+      }).length;
+      var avgBooksPerMonth = (recentCount / 12).toFixed(1);
+
+      // Streak: meses consecutivos com ao menos 1 leitura (a partir do mais recente)
+      var streak = _calculateMonthlyStreak_(timeline);
+
+      var stats = {
+        totalBooks: total,
+        averageRating: countRated > 0 ? parseFloat((sumRating / countRated).toFixed(1)) : 0,
+        recentBooks: records
+          .filter(function(r) { return r.date; })
+          .sort(function(a, b) { return new Date(b.date) - new Date(a.date); })
+          .slice(0, 5),
+        categoriesRead: categoriesRead,
+        readingStreak: streak,
+        busiestMonth: busiestMonth ? busiestMonth.periodo : null,
+        avgBooksPerMonth: parseFloat(avgBooksPerMonth)
+      };
+
+      cache.put(cacheKey, JSON.stringify(stats), HISTORY_CACHE_TTL);
+      return stats;
+    } catch (error) {
+      Logger.log("Erro em getReadingHistoryStats: " + error.message);
+      throw error;
     }
-    var cat = r.category || 'Sem Categoria';
-    categoriesRead[cat] = (categoriesRead[cat] || 0) + 1;
-  });
-
-  // Mês mais produtivo
-  var timeline = getReadingHistoryTimeline(userId);
-  var busiestMonth = timeline.length > 0
-    ? timeline.reduce(function(a, b) { return b.total > a.total ? b : a; }, timeline[0])
-    : null;
-
-  // Média de livros por mês (últimos 12 meses)
-  var twelveMonthsAgo = new Date();
-  twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
-  var recentCount = records.filter(function(r) {
-    return r.date && new Date(r.date) >= twelveMonthsAgo;
-  }).length;
-  var avgBooksPerMonth = (recentCount / 12).toFixed(1);
-
-  // Streak: meses consecutivos com ao menos 1 leitura (a partir do mais recente)
-  var streak = _calculateMonthlyStreak_(timeline);
-
-  var stats = {
-    totalBooks: total,
-    averageRating: countRated > 0 ? parseFloat((sumRating / countRated).toFixed(1)) : 0,
-    recentBooks: records
-      .filter(function(r) { return r.date; })
-      .sort(function(a, b) { return new Date(b.date) - new Date(a.date); })
-      .slice(0, 5),
-    categoriesRead: categoriesRead,
-    readingStreak: streak,
-    busiestMonth: busiestMonth ? busiestMonth.periodo : null,
-    avgBooksPerMonth: parseFloat(avgBooksPerMonth)
-  };
-
-  cache.put(cacheKey, JSON.stringify(stats), HISTORY_CACHE_TTL);
-  return stats;
+  } catch (error) {
+    Logger.log("Erro em getReadingHistoryStats: " + error.message);
+    throw error;
+  }
 }
 
 /**
@@ -115,12 +135,17 @@ function getReadingHistoryStats(userId) {
  * @return {Array<Object>}
  */
 function getRecentReadings(userId, n) {
-  n = n || 10;
-  var records = getReadingRecordsByUser(userId) || [];
-  return records
-    .filter(function(r) { return r.date; })
-    .sort(function(a, b) { return new Date(b.date) - new Date(a.date); })
-    .slice(0, n);
+  try {
+    n = n || 10;
+    var records = getReadingRecordsByUser_(userId) || [];
+    return records
+      .filter(function(r) { return r.date; })
+      .sort(function(a, b) { return new Date(b.date) - new Date(a.date); })
+      .slice(0, n);
+  } catch (error) {
+    Logger.log("Erro em getRecentReadings: " + error.message);
+    throw error;
+  }
 }
 
 /**

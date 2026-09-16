@@ -11,68 +11,95 @@ var CACHE_NS            = 'SUGG_';
 /**
  * Retorna sugestões agregadas e processadas para o frontend.
  * Aplica filtros de preferência e remove duplicatas do histórico recente.
- * @param {string} userId  Opcional — usa sessão ativa se omitido.
+ * @param {string} authToken Token da sessão web; a identidade vem da sessão.
  * @return {Object} Pacote de sugestões com metadados de UI.
  */
-function getAggregatedSuggestions(userId) {
-  var id    = userId || getAuthenticatedUserEmail();
-  var cache = CacheService.getUserCache();
-  var cacheKey = CACHE_NS + id;
-  var cached   = cache.get(cacheKey);
-  if (cached) return JSON.parse(cached);
+function getAggregatedSuggestions(authToken) {
+  try {
+    var sessionUser = typeof getUpOracularWebSessionUser_ === 'function'
+      ? getUpOracularWebSessionUser_(authToken) : null;
+    if (!sessionUser) throw new Error('Sessão inválida ou expirada.');
+    var id = String(sessionUser.id || sessionUser.userId || sessionUser.email || sessionUser.username || '').trim();
+    if (!id) throw new Error('Sessão sem identidade de usuário.');
+    var cache = CacheService.getUserCache();
+    var cacheKey = CACHE_NS + id;
+    var cached   = cache.get(cacheKey);
+    if (cached) return JSON.parse(cached);
 
-  var recomData = generatePersonalizedTrail(id, 'Escolhas que queremos ler, possibilidades que podemos ser');
+    var recomData = generatePersonalizedTrailForUser_(id, 'Escolhas que queremos ler, possibilidades que podemos ser');
 
-  if (recomData && recomData.recomendacoes) {
-    recomData.recomendacoes = _deduplicateSuggestions(id, recomData.recomendacoes);
-    recomData.recomendacoes = recomData.recomendacoes.slice(0, SUGGESTER_MAX_ITEMS);
-    recomData.processedAt         = new Date().toISOString();
-    recomData.recomendacoesCount  = recomData.recomendacoes.length;
-    recomData.userId              = id;
+    if (recomData && recomData.recomendacoes) {
+      recomData.recomendacoes = _deduplicateSuggestions(id, recomData.recomendacoes);
+      recomData.recomendacoes = recomData.recomendacoes.slice(0, SUGGESTER_MAX_ITEMS);
+      recomData.processedAt         = new Date().toISOString();
+      recomData.recomendacoesCount  = recomData.recomendacoes.length;
+      recomData.userId              = id;
+    }
+
+    cache.put(cacheKey, JSON.stringify(recomData), 300);
+    return recomData;
+  } catch (error) {
+    Logger.log("Erro em getAggregatedSuggestions: " + error.message);
+    throw error;
   }
-
-  cache.put(cacheKey, JSON.stringify(recomData), 300);
-  return recomData;
 }
 
 /**
  * Remove sugestões já presentes no histórico de leitura recente do usuário.
- * @param {string} userId
+ * @param {string} userId Identidade interna já resolvida pela sessão autenticada.
  * @param {Array<Object>} suggestions
  * @return {Array<Object>} Lista filtrada.
  */
 function _deduplicateSuggestions(userId, suggestions) {
-  if (!suggestions || !suggestions.length) return [];
+  try {
+    try {
+      if (!suggestions || !suggestions.length) return [];
 
-  var ss        = SpreadsheetApp.getActiveSpreadsheet();
-  var histSheet = ss.getSheetByName('Leituras');
-  if (!histSheet) return suggestions;
+      var ss        = getBoundSpreadsheet_();
+      var histSheet = ss.getSheetByName('Leituras');
+      if (!histSheet) return suggestions;
 
-  var data       = histSheet.getDataRange().getValues();
-  var readTitles = {};
-  for (var i = 1; i < data.length; i++) {
-    if (String(data[i][1]) === String(userId)) {
-      readTitles[String(data[i][2]).toLowerCase()] = true;
+      var data       = histSheet.getDataRange().getValues();
+      var readTitles = {};
+      var readAcervo = {};
+      for (var i = 1; i < data.length; i++) {
+        if (String(data[i][1]) === String(userId)) {
+          readTitles[String(data[i][2]).toLowerCase()] = true;
+          if (data[i][7]) readAcervo[String(data[i][7])] = true;
+        }
+      }
+
+      return suggestions.filter(function(s) {
+        if (s.acervoId && readAcervo[String(s.acervoId)]) return false;
+        return !readTitles[String(s.titulo || '').toLowerCase()];
+      });
+    } catch (error) {
+      Logger.log("Erro em _deduplicateSuggestions: " + error.message);
+      throw error;
     }
+  } catch (error) {
+    Logger.log("Erro em _deduplicateSuggestions: " + error.message);
+    throw error;
   }
-
-  return suggestions.filter(function(s) {
-    return !readTitles[String(s.titulo || '').toLowerCase()];
-  });
 }
 
 /**
  * Retorna sugestões filtradas por categoria específica.
- * @param {string} userId
+ * @param {string} authToken Token da sessão web.
  * @param {string} category
  * @return {Array<Object>}
  */
-function getSuggestionsByCategory(userId, category) {
-  var result = getAggregatedSuggestions(userId);
-  if (!result || !result.recomendacoes) return [];
-  return result.recomendacoes.filter(function(s) {
-    return String(s.categoria || '').toLowerCase() === String(category).toLowerCase();
-  });
+function getSuggestionsByCategory(authToken, category) {
+  try {
+    var result = getAggregatedSuggestions(authToken);
+    if (!result || !result.recomendacoes) return [];
+    return result.recomendacoes.filter(function(s) {
+      return String(s.categoria || '').toLowerCase() === String(category).toLowerCase();
+    });
+  } catch (error) {
+    Logger.log("Erro em getSuggestionsByCategory: " + error.message);
+    throw error;
+  }
 }
 
 /**
@@ -80,7 +107,17 @@ function getSuggestionsByCategory(userId, category) {
  * @param {string} userId
  */
 function invalidateSuggestionCache(userId) {
-  CacheService.getUserCache().remove(CACHE_NS + userId);
+  try {
+    try {
+      CacheService.getUserCache().remove(CACHE_NS + userId);
+    } catch (error) {
+      Logger.log("Erro em invalidateSuggestionCache: " + error.message);
+      throw error;
+    }
+  } catch (error) {
+    Logger.log("Erro em invalidateSuggestionCache: " + error.message);
+    throw error;
+  }
 }
 
 /**
@@ -89,6 +126,6 @@ function invalidateSuggestionCache(userId) {
  */
 function serveTrailSuggesterUI() {
   return HtmlService
-    .createHtmlOutputFromFile('TrailSuggester')
+    .createTemplateFromFile('TrailSuggesterHtml').evaluate()
     .setTitle('UpOracular | Sugestões de Trilha');
 }

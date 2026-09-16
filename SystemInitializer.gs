@@ -19,32 +19,43 @@ var SHEET_SCHEMAS = {
  * @return {string} Mensagem com resumo da inicialização.
  */
 function initializeSystem() {
-  var ss      = SpreadsheetApp.getActiveSpreadsheet();
-  var created = [];
-  var updated = [];
+  try {
+    var ss      = getBoundSpreadsheet_();
+    var created = [];
+    var updated = [];
 
-  for (var name in SHEET_SCHEMAS) {
-    var sheet = ss.getSheetByName(name);
-    if (!sheet) {
-      sheet = ss.insertSheet(name);
-      created.push(name);
+    for (var name in SHEET_SCHEMAS) {
+      var sheet = ss.getSheetByName(name);
+      if (!sheet) {
+        sheet = ss.insertSheet(name);
+        created.push(name);
+      }
+      _ensureHeaders(sheet, SHEET_SCHEMAS[name]);
+      if (!created.includes(name)) updated.push(name);
     }
-    _ensureHeaders(sheet, SHEET_SCHEMAS[name]);
-    if (!created.includes(name)) updated.push(name);
+
+    // Persiste versão e timestamp de inicialização
+    var props = PropertiesService.getScriptProperties();
+    props.setProperty('SYSTEM_VERSION', SYSTEM_VERSION);
+    props.setProperty('LAST_INIT', new Date().toISOString());
+
+    // Registra trigger onOpen se não existir
+    _ensureOnOpenTrigger();
+
+    // Adiciona item de menu "Maturidade do Backend" ao painel UpOracular
+    try { addMaturityMenuItem(); } catch (e) { /* Silencioso — disponível via menu manual */ }
+
+    // Adiciona item de menu "Maturidade do Frontend"
+    try { addFrontendMaturityMenuItem(); } catch (e) { /* Silencioso */ }
+
+    var summary = [];
+    if (created.length) summary.push('Criadas: ' + created.join(', '));
+    if (updated.length) summary.push('Revisadas: ' + updated.join(', '));
+    return summary.length ? summary.join(' | ') : 'Sistema já estava pronto. v' + SYSTEM_VERSION;
+  } catch (error) {
+    Logger.log("Erro em initializeSystem: " + error.message);
+    throw error;
   }
-
-  // Persiste versão e timestamp de inicialização
-  var props = PropertiesService.getScriptProperties();
-  props.setProperty('SYSTEM_VERSION', SYSTEM_VERSION);
-  props.setProperty('LAST_INIT', new Date().toISOString());
-
-  // Registra trigger onOpen se não existir
-  _ensureOnOpenTrigger();
-
-  var summary = [];
-  if (created.length) summary.push('Criadas: ' + created.join(', '));
-  if (updated.length) summary.push('Revisadas: ' + updated.join(', '));
-  return summary.length ? summary.join(' | ') : 'Sistema já estava pronto. v' + SYSTEM_VERSION;
 }
 
 /**
@@ -54,10 +65,15 @@ function initializeSystem() {
  * @param {Array<string>} headers
  */
 function _ensureHeaders(sheet, headers) {
-  var firstRow = sheet.getRange(1, 1, 1, headers.length).getValues()[0];
-  var isEmpty  = firstRow.every(function(cell) { return cell === '' || cell === null; });
-  if (isEmpty) {
-    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  try {
+    var firstRow = sheet.getRange(1, 1, 1, headers.length).getValues()[0];
+    var isEmpty  = firstRow.every(function(cell) { return cell === '' || cell === null; });
+    if (isEmpty) {
+      sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    }
+  } catch (error) {
+    Logger.log("Erro em _ensureHeaders: " + error.message);
+    throw error;
   }
 }
 
@@ -71,7 +87,7 @@ function _ensureOnOpenTrigger() {
   });
   if (!hasOnOpen) {
     ScriptApp.newTrigger('onOpen')
-      .forSpreadsheet(SpreadsheetApp.getActiveSpreadsheet())
+      .forSpreadsheet(getBoundSpreadsheet_())
       .onOpen()
       .create();
   }
@@ -82,6 +98,11 @@ function _ensureOnOpenTrigger() {
  * @return {string}
  */
 function getSystemVersion() {
-  var props = PropertiesService.getScriptProperties();
-  return props.getProperty('SYSTEM_VERSION') || SYSTEM_VERSION;
+  try {
+    var props = PropertiesService.getScriptProperties();
+    return props.getProperty('SYSTEM_VERSION') || SYSTEM_VERSION;
+  } catch (error) {
+    Logger.log("Erro em getSystemVersion: " + error.message);
+    throw error;
+  }
 }
