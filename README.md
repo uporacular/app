@@ -61,8 +61,12 @@ Transformar dados de empréstimos e perfis de leitura em oportunidades de cresci
 
 1. Login e criação de perfil.
 2. Registro de leituras realizadas e interesses.
-3. Geração automática de trilhas e recomendações.
-4. Visualização de estatísticas, relatórios e sugestões personalizadas.
+3. Triagem local de obras elegíveis do acervo.
+4. Apoio opcional da IA, somente após consentimento explícito e revogável.
+5. Revisão das sugestões e do guia de antecipação pelo leitor.
+6. Escolha explícita da próxima obra, registrada como decisão do estudante.
+
+O contrato operacional completo está em [WORKFLOW_BASICO.md](WORKFLOW_BASICO.md).
 
 ## Detalhes Técnicos
 

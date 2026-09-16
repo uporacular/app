@@ -10,8 +10,13 @@
  * @return {string} Valor salvo.
  */
 function getUserSetting(key) {
-  var props = PropertiesService.getUserProperties();
-  return props.getProperty('S_' + key);
+  try {
+    var props = PropertiesService.getUserProperties();
+    return props.getProperty('S_' + key);
+  } catch (error) {
+    Logger.log("Erro em getUserSetting: " + error.message);
+    throw error;
+  }
 }
 
 /**
@@ -20,11 +25,16 @@ function getUserSetting(key) {
  * @param {string} val
  */
 function setUserSetting(key, val) {
-  var props = PropertiesService.getUserProperties();
-  props.setProperty('S_' + key, val);
+  try {
+    var props = PropertiesService.getUserProperties();
+    props.setProperty('S_' + key, val);
   
-  var cache = CacheService.getUserCache();
-  cache.put('USET_' + key, String(val), 600);
+    var cache = CacheService.getUserCache();
+    cache.put('USET_' + key, String(val), 600);
+  } catch (error) {
+    Logger.log("Erro em setUserSetting: " + error.message);
+    throw error;
+  }
 }
 
 /**
@@ -32,25 +42,47 @@ function setUserSetting(key, val) {
  * @return {Object}
  */
 function getAllUserSettings() {
-  var props = PropertiesService.getUserProperties().getProperties();
-  var filtered = {};
-  var keys = Object.keys(props);
-  for (var i = 0; i < keys.length; i++) {
-    var k = keys[i];
-    if (k.indexOf('S_') === 0) {
-      filtered[k.replace('S_', '')] = props[k];
+  try {
+    var props = PropertiesService.getUserProperties().getProperties();
+    var filtered = {};
+    var keys = Object.keys(props);
+    for (var i = 0; i < keys.length; i++) {
+      var k = keys[i];
+      if (k.indexOf('S_') === 0) {
+        filtered[k.replace('S_', '')] = props[k];
+      }
     }
+    return filtered;
+  } catch (error) {
+    Logger.log("Erro em getAllUserSettings: " + error.message);
+    throw error;
   }
-  return filtered;
 }
 
 /**
  * Faz flush / limpa preferências.
  */
 function clearAllUserSettings() {
-  var props = PropertiesService.getUserProperties();
-  var keys = Object.keys(props.getProperties());
-  keys.forEach(function(k) {
-    if(k.indexOf('S_') === 0) props.deleteProperty(k);
+  try {
+    var props = PropertiesService.getUserProperties();
+    var keys = Object.keys(props.getProperties());
+    keys.forEach(function(k) {
+      if(k.indexOf('S_') === 0) props.deleteProperty(k);
+    });
+  } catch (error) {
+    Logger.log("Erro em clearAllUserSettings: " + error.message);
+    throw error;
+  }
+}
+
+function getUserSettings(email) {
+  return getAllUserSettings();
+}
+
+function saveUserSettings(email, settings) {
+  settings = settings || {};
+  Object.keys(settings).forEach(function(key) {
+    setUserSetting(key, String(settings[key] == null ? '' : settings[key]));
   });
+  return { success: true, settings: getAllUserSettings() };
 }

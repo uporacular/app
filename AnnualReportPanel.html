@@ -1,0 +1,125 @@
+<section id="annual-reports" aria-labelledby="annual-title">
+  <style>
+    #annual-reports{margin:28px 0;padding:24px;border:1px solid #738894;border-radius:12px;background:var(--uo-panel,#20242b);color:var(--uo-text,#e9ecf1)}
+    #annual-reports h2{margin-top:0}#annual-reports .annual-controls{display:flex;gap:12px;flex-wrap:wrap;align-items:end}
+    #annual-reports label{display:block}#annual-reports input{box-sizing:border-box;width:150px;padding:8px}
+    #annual-reports button{min-height:44px;padding:8px 14px;margin:8px 0;cursor:pointer}
+    #annual-reports button:disabled{opacity:.55;cursor:wait}#annual-reports .annual-table{overflow-x:auto}
+    #annual-reports table{width:100%;border-collapse:collapse}#annual-reports th,#annual-reports td{text-align:left;padding:10px;border-bottom:1px solid #738894}
+    #annual-reports a{color:inherit;text-decoration:underline}#annual-reports [hidden]{display:none!important}
+    #annual-reports :focus-visible{outline:3px solid #ffd166;outline-offset:3px}
+  </style>
+  <h2 id="annual-title">Relatórios anuais por aluno</h2>
+  <p>PDFs produzidos pelo Gemini na pasta <code>FOLDER_ID</code>, para revisão pedagógica. Administração restrita; nenhuma entrega automática às famílias.</p>
+  <p id="annual-status" role="status" aria-live="polite">Verificando acesso…</p>
+  <div id="annual-admin" hidden>
+    <p>Preencha todos os alunos do ano em <code>OracularAnoLetivo</code> e o currículo de destino em <code>OracularCurriculos</code>. O consentimento de IA deve estar ativo. Escolha não significa leitura concluída.</p>
+    <div class="annual-controls">
+      <label>Ano de referência<input inputmode="decimal" id="annual-year" type="number" min="2000" max="2099" step="1"></label>
+      <button id="annual-refresh" type="button">Atualizar situação</button>
+      <button id="annual-prepare" type="button">Preparar abas</button>
+      <button id="annual-start" type="button">Incluir alunos na fila</button>
+      <button id="annual-next" type="button">Gerar próximo PDF</button>
+    </div>
+    <p id="annual-config"></p>
+    <details>
+      <summary>Fechamento automático anual</summary>
+      <p>Quando ativado, inclui os alunos após o término do dia de fechamento e processa um PDF por execução, aproximadamente a cada 10 minutos. Também processa os lotes incluídos manualmente. Gera consumo da API Gemini. Erros e bloqueios exigem retomada manual.</p>
+      <label>Último dia letivo (MM-DD)<input inputmode="text" id="annual-close" type="text" value="12-31" pattern="[0-9]{2}-[0-9]{2}" maxlength="5"></label>
+      <button id="annual-enable" type="button">Ativar fechamento automático</button>
+      <button id="annual-disable" type="button">Desativar automação</button>
+      <p id="annual-schedule"></p>
+    </details>
+    <div class="annual-table"><table>
+      <caption>Fila do ano selecionado — “Pronto” significa PDF salvo, ainda não revisado</caption>
+      <thead><tr><th>Aluno</th><th>Situação</th><th>Detalhes</th><th>Ação</th></tr></thead>
+      <tbody id="annual-jobs"></tbody>
+    </table></div>
+  </div>
+</section>
+<script>
+(function() {
+  'use strict';
+  var root = document.getElementById('annual-reports');
+  var status = document.getElementById('annual-status');
+  var admin = document.getElementById('annual-admin');
+  var year = document.getElementById('annual-year');
+  var jobs = document.getElementById('annual-jobs');
+  var busy = false, token = '';
+  year.value = String(new Date().getFullYear());
+  function controls(disabled) {
+    busy = disabled;
+    root.querySelectorAll('button,input').forEach(function(el) { el.disabled = disabled; });
+    root.setAttribute('aria-busy', String(disabled));
+  }
+  function call(name, args, done) {
+    try {
+      var runner = google.script.run.withSuccessHandler(function(response) {
+        if (!response || response.success !== true) { fail({ message: 'Resposta inválida do servidor. Atualize a situação antes de repetir.' }); return; }
+        try { done(response); } catch (error) { fail(error); }
+      }).withFailureHandler(fail);
+      runner[name].apply(runner, [token].concat(args));
+    } catch (error) { fail(error); }
+  }
+  function fail(error) {
+    controls(false);
+    status.textContent = (error && error.message || 'Falha de comunicação.') + ' Atualize a situação antes de repetir uma geração.';
+  }
+  function render(data) {
+    admin.hidden = false; jobs.replaceChildren();
+    document.getElementById('annual-config').textContent = [data.configError, data.rosterError,
+      data.rosterCount + ' aluno(s) no cadastro anual; ' + data.jobs.length + ' na fila.'].filter(Boolean).join(' ');
+    document.getElementById('annual-close').value = data.closeDate;
+    document.getElementById('annual-schedule').textContent = data.scheduleEnabled ? 'Automação ativada.' : 'Automação desativada. Use “Gerar próximo PDF” para processar manualmente.';
+    data.jobs.forEach(function(job) {
+      var tr = document.createElement('tr');
+      [job.name, job.status, job.message].forEach(function(value) {
+        var td = document.createElement('td'); td.textContent = value; tr.appendChild(td);
+      });
+      var action = document.createElement('td');
+      if (job.url && /^https:\/\/drive\.google\.com\/file\/d\/[\w-]+\/view$/.test(job.url)) {
+        var link = document.createElement('a'); link.href = job.url; link.target = '_blank'; link.rel = 'noopener noreferrer'; link.textContent = 'Revisar PDF'; action.appendChild(link);
+      }
+      if (job.status === 'ERRO' || job.status === 'BLOQUEADO') {
+        var retry = document.createElement('button'); retry.type = 'button'; retry.textContent = 'Retomar após correção';
+        retry.addEventListener('click', function() { mutate('retryOracularAnnualReport', [job.id]); }); action.appendChild(retry);
+      }
+      tr.appendChild(action); jobs.appendChild(tr);
+    });
+    if (!data.jobs.length) {
+      var tr = document.createElement('tr'), td = document.createElement('td'); td.colSpan = 4;
+      td.textContent = 'Nenhum relatório incluído neste ano.'; tr.appendChild(td); jobs.appendChild(tr);
+    }
+    controls(false);
+  }
+  function refresh(message) {
+    call('getOracularAnnualReports', [year.value], function(data) {
+      render(data); status.textContent = message || 'Situação atualizada. PDFs prontos ainda precisam de revisão pedagógica.';
+    });
+  }
+  function mutate(name, args) {
+    if (busy) return;
+    controls(true); status.textContent = 'Processando… não feche a página durante uma geração manual.';
+    try { call(name, args, function(result) { refresh(result.message || 'Operação concluída.'); }); } catch (error) { fail(error); }
+  }
+  document.getElementById('annual-refresh').addEventListener('click', function() {
+    if (busy) return; controls(true); try { refresh(); } catch (e) { fail(e); }
+  });
+  document.getElementById('annual-prepare').addEventListener('click', function() { mutate('prepareOracularAnnualReports', []); });
+  document.getElementById('annual-start').addEventListener('click', function() { mutate('startOracularAnnualReports', [year.value]); });
+  document.getElementById('annual-next').addEventListener('click', function() { mutate('processOracularAnnualReport', [year.value]); });
+  document.getElementById('annual-enable').addEventListener('click', function() {
+    mutate('configureOracularAnnualSchedule', [true, document.getElementById('annual-close').value]);
+  });
+  document.getElementById('annual-disable').addEventListener('click', function() { mutate('configureOracularAnnualSchedule', [false, '']); });
+  document.getElementById('link-report').addEventListener('click', function(event) {
+    event.preventDefault(); root.scrollIntoView({ behavior: 'smooth' });
+  });
+  function init() {
+    token = window.__ORACULAR_REPORT_TOKEN__ || new URLSearchParams(window.location.hash.replace(/^#/, '')).get('tok') || '';
+    if (!token || !window.google || !google.script || !google.script.run) { status.textContent = 'Entre no aplicativo para consultar o acesso administrativo.'; return; }
+    controls(true); try { refresh(); } catch (e) { fail(e); }
+  }
+  init();
+})();
+</script>

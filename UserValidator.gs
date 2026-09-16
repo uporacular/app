@@ -14,25 +14,26 @@ var CACHE_TTL  = 600; // 10 min
  * @return {boolean}
  */
 function isValidUser(email) {
-  if (!email) return false;
-  var cache = CacheService.getScriptCache();
-  var cached = cache.get('VALID_USER_' + email);
-  if (cached !== null) return cached === 'true';
+  try {
+    if (!email) return false;
+    
+    return GASUtilities.getCached('VALID_USER_' + email, function() {
+      var ss    = getBoundSpreadsheet_();
+      var sheet = ss.getSheetByName('Perfis');
+      if (!sheet) return false;
 
-  var ss    = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName('Perfis');
-  if (!sheet) return false;
-
-  var data  = sheet.getDataRange().getValues();
-  var found = false;
-  for (var i = 1; i < data.length; i++) {
-    if (String(data[i][2]).toLowerCase() === String(email).toLowerCase()) {
-      found = true;
-      break;
-    }
+      var data  = sheet.getDataRange().getValues();
+      for (var i = 1; i < data.length; i++) {
+        if (String(data[i][2]).toLowerCase() === String(email).toLowerCase()) {
+          return true;
+        }
+      }
+      return false;
+    }, CACHE_TTL);
+  } catch (error) {
+    Logger.log("Erro em isValidUser: " + error.message);
+    throw error;
   }
-  cache.put('VALID_USER_' + email, String(found), CACHE_TTL);
-  return found;
 }
 
 /**
@@ -42,24 +43,26 @@ function isValidUser(email) {
  * @return {string|null} Role ou null se não encontrado.
  */
 function getUserRole(email) {
-  if (!email) return null;
-  var cache = CacheService.getScriptCache();
-  var cached = cache.get('ROLE_' + email);
-  if (cached) return cached;
+  try {
+    if (!email) return null;
+    
+    return GASUtilities.getCached('ROLE_' + email, function() {
+      var ss    = getBoundSpreadsheet_();
+      var sheet = ss.getSheetByName('Perfis');
+      if (!sheet) return null;
 
-  var ss    = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName('Perfis');
-  if (!sheet) return null;
-
-  var data = sheet.getDataRange().getValues();
-  for (var i = 1; i < data.length; i++) {
-    if (String(data[i][2]).toLowerCase() === String(email).toLowerCase()) {
-      var role = String(data[i][3] || 'aluno').toLowerCase();
-      cache.put('ROLE_' + email, role, CACHE_TTL);
-      return role;
-    }
+      var data = sheet.getDataRange().getValues();
+      for (var i = 1; i < data.length; i++) {
+        if (String(data[i][2]).toLowerCase() === String(email).toLowerCase()) {
+          return String(data[i][3] || 'aluno').toLowerCase();
+        }
+      }
+      return null;
+    }, CACHE_TTL);
+  } catch (error) {
+    Logger.log("Erro em getUserRole: " + error.message);
+    throw error;
   }
-  return null;
 }
 
 /**
@@ -79,9 +82,14 @@ function userHasRole(email, requiredRole) {
  * @return {boolean}
  */
 function isValidEmailFormat(email) {
-  if (!email) return false;
-  var re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return re.test(String(email).trim());
+  try {
+    if (!email) return false;
+    var re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(String(email).trim());
+  } catch (error) {
+    Logger.log("Erro em isValidEmailFormat: " + error.message);
+    throw error;
+  }
 }
 
 /**
@@ -89,9 +97,12 @@ function isValidEmailFormat(email) {
  * @param {string} email
  */
 function invalidateUserCache(email) {
-  var cache = CacheService.getScriptCache();
-  cache.remove('VALID_USER_' + email);
-  cache.remove('ROLE_' + email);
+  try {
+    GASUtilities.removeCacheMultiple(['VALID_USER_' + email, 'ROLE_' + email]);
+  } catch (error) {
+    Logger.log("Erro em invalidateUserCache: " + error.message);
+    throw error;
+  }
 }
 
 /**
@@ -99,19 +110,24 @@ function invalidateUserCache(email) {
  * @return {Array<Object>} Array de {nome, email, role}
  */
 function listAllUsers() {
-  var ss    = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName('Perfis');
-  if (!sheet) return [];
+  try {
+    var ss    = getBoundSpreadsheet_();
+    var sheet = ss.getSheetByName('Perfis');
+    if (!sheet) return [];
 
-  var data  = sheet.getDataRange().getValues();
-  var users = [];
-  for (var i = 1; i < data.length; i++) {
-    if (!data[i][2]) continue;
-    users.push({
-      nome:  String(data[i][1]),
-      email: String(data[i][2]),
-      role:  String(data[i][3] || 'aluno')
-    });
+    var data  = sheet.getDataRange().getValues();
+    var users = [];
+    for (var i = 1; i < data.length; i++) {
+      if (!data[i][2]) continue;
+      users.push({
+        nome:  String(data[i][1]),
+        email: String(data[i][2]),
+        role:  String(data[i][3] || 'aluno')
+      });
+    }
+    return users.filter(function(u) { return isValidEmailFormat(u.email); });
+  } catch (error) {
+    Logger.log("Erro em listAllUsers: " + error.message);
+    throw error;
   }
-  return users.filter(function(u) { return isValidEmailFormat(u.email); });
 }

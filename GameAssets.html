@@ -1,0 +1,182 @@
+<style>
+  .oracular-asset[hidden] { display: none !important; }
+  .oracular-asset { max-width: 100%; height: auto; }
+  .oracular-asset-status {
+    margin: .75rem 0 0;
+    color: var(--uo-muted, #b2b9c4);
+    font-size: .82rem;
+  }
+  .oracular-login-hero {
+    display: block;
+    width: min(100%, 560px);
+    margin: 28px 0 0;
+    border: 1px solid rgba(232, 196, 126, .32);
+    border-radius: 18px;
+    box-shadow: 0 24px 55px rgba(3, 8, 20, .38);
+  }
+  .oracular-path-board {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(140px, .32fr);
+    gap: 18px;
+    align-items: end;
+    width: min(1080px, calc(100% - 32px));
+    margin: 0 auto 24px;
+    padding: 18px;
+    border: 1px solid rgba(232, 196, 126, .24);
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(26, 42, 74, .92), rgba(28, 52, 45, .84));
+  }
+  .oracular-path-board__map { width: 100%; max-height: 340px; object-fit: contain; }
+  .oracular-path-board__mascot { width: min(100%, 230px); justify-self: center; }
+  .oracular-path-board figcaption { grid-column: 1 / -1; color: #dce5ec; line-height: 1.55; }
+  .oracular-path-board .oracular-asset-status { grid-column: 1 / -1; }
+  .oracular-guides {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    margin-top: 18px;
+  }
+  .oracular-guide {
+    margin: 0;
+    padding: 14px;
+    border: 1px solid rgba(148, 163, 184, .22);
+    border-radius: 12px;
+    background: rgba(30, 41, 59, .56);
+  }
+  .oracular-guide img { display: block; width: 100%; max-height: 145px; object-fit: contain; }
+  .oracular-guide figcaption { margin-top: 10px; color: #cbd5e1; font-size: .86rem; line-height: 1.45; }
+  .oracular-reader-celebration {
+    display: grid;
+    grid-template-columns: 92px minmax(0, 1fr);
+    gap: 16px;
+    align-items: center;
+    width: min(720px, calc(100% - 32px));
+    margin: -10px auto 28px;
+    padding: 16px 18px;
+    border: 1px solid rgba(232, 196, 126, .42);
+    border-radius: 14px;
+    background: rgba(54, 45, 24, .48);
+  }
+  .oracular-reader-celebration[hidden] { display: none; }
+  .oracular-reader-celebration img { width: 92px; }
+  .oracular-reader-celebration strong { display: block; margin-bottom: 5px; color: #f7d994; }
+  .oracular-reader-celebration p { margin: 0; color: #dce5ec; line-height: 1.5; }
+  .anticipation-dialog[data-asset-background-ready="true"] {
+    background-image:
+      linear-gradient(rgba(17, 24, 39, .92), rgba(17, 24, 39, .92)),
+      var(--oracular-anticipation-background);
+    background-position: center;
+    background-size: cover;
+  }
+  html[data-theme="light"] .oracular-guide { background: rgba(241, 245, 249, .82); }
+  html[data-theme="light"] .oracular-guide figcaption,
+  html[data-theme="light"] .oracular-reader-celebration p { color: #334155; }
+  html[data-theme="light"] .oracular-reader-celebration { background: #fff8e8; }
+  html[data-theme="light"] .anticipation-dialog[data-asset-background-ready="true"] {
+    background-image:
+      linear-gradient(rgba(255, 255, 255, .94), rgba(255, 255, 255, .94)),
+      var(--oracular-anticipation-background);
+  }
+  @media (max-width: 700px) {
+    .oracular-path-board { grid-template-columns: 1fr; width: calc(100% - 20px); }
+    .oracular-path-board__mascot { width: 150px; }
+    .oracular-guides { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .oracular-reader-celebration:not([hidden]) { animation: oracular-reveal .36s ease-out; }
+    @keyframes oracular-reveal { from { opacity: 0; transform: translateY(8px); } }
+  }
+</style>
+<script>
+  window.UpOracularAssets = (function() {
+    var manifest = null;
+    var loading = false;
+
+    function isSafeDriveUrl(value) {
+      try {
+        var url = new URL(value);
+        return url.protocol === 'https:' && url.hostname === 'drive.google.com';
+      } catch (error) {
+        return false;
+      }
+    }
+
+    function setStatus(message) {
+      document.querySelectorAll('[data-asset-status]').forEach(function(node) {
+        node.textContent = message;
+        node.hidden = !message;
+      });
+    }
+
+    function applyImage(node) {
+      var name = node.getAttribute('data-asset-name');
+      var url = manifest && manifest.assets ? manifest.assets[name] : '';
+      if (!isSafeDriveUrl(url)) return;
+      node.src = url;
+      node.hidden = false;
+    }
+
+    function applyBackground(node) {
+      var name = node.getAttribute('data-asset-background');
+      var url = manifest && manifest.assets ? manifest.assets[name] : '';
+      if (!isSafeDriveUrl(url)) return;
+      node.style.setProperty('--oracular-anticipation-background', 'url("' + url.replace(/"/g, '%22') + '")');
+      node.setAttribute('data-asset-background-ready', 'true');
+    }
+
+    function applyAll(root) {
+      if (!manifest || !manifest.ok) return;
+      (root || document).querySelectorAll('[data-asset-name]:not([data-asset-deferred])').forEach(applyImage);
+      (root || document).querySelectorAll('[data-asset-background]').forEach(applyBackground);
+      setStatus('');
+    }
+
+    function reveal(name) {
+      if (!manifest || !manifest.ok) return false;
+      var selector = '[data-asset-name="' + String(name).replace(/"/g, '\\"') + '"]';
+      document.querySelectorAll(selector).forEach(applyImage);
+      return true;
+    }
+
+    function load() {
+      if (loading || manifest) return;
+      loading = true;
+      if (!window.google || !google.script || !google.script.run) {
+        setStatus('Elementos visuais disponíveis somente no webapp publicado.');
+        return;
+      }
+      google.script.run
+        .withSuccessHandler(function(result) {
+          loading = false;
+          manifest = result || { ok: false, assets: {} };
+          if (!manifest.ok) {
+            setStatus('A experiência visual está temporariamente indisponível; o conteúdo continua acessível.');
+            return;
+          }
+          applyAll(document);
+          var detail = { project: manifest.project, names: Object.keys(manifest.assets || {}) };
+          window.dispatchEvent(new CustomEvent('uporacularassetsready', { detail: detail }));
+          window.dispatchEvent(new CustomEvent('gameassetsready', { detail: detail }));
+        })
+        .withFailureHandler(function() {
+          loading = false;
+          setStatus('A experiência visual está temporariamente indisponível; o conteúdo continua acessível.');
+        })
+        .getGameAssetManifest();
+    }
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', load);
+    else load();
+
+    new MutationObserver(function(records) {
+      if (!manifest || !manifest.ok) return;
+      records.forEach(function(record) {
+        record.addedNodes.forEach(function(node) {
+          if (node.nodeType === 1) applyAll(node);
+        });
+      });
+    }).observe(document.documentElement, { childList: true, subtree: true });
+
+    return { load: load, reveal: reveal, applyAll: applyAll };
+  })();
+</script>

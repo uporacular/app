@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>UpOracular | Gerenciar Sessão</title>
+  <meta name="description" content="Gerencie suas sessões de acesso ao UpOracular.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #15171c;
+      --card-bg: rgba(30, 41, 59, 0.75);
+      --border: rgba(255, 255, 255, 0.1);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #7aa2d6;
+      --accent2: #9ec5e8;
+      --success: #4ade80;
+      --danger: #f87171;
+      --radius: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      background-image:
+        radial-gradient(at 0% 0%, rgba(56, 189, 248, .12) 0px, transparent 55%),
+        radial-gradient(at 100% 100%, rgba(129, 140, 248, .1) 0px, transparent 55%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 1.5rem 1rem 3rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .page-header {
+      width: 100%;
+      max-width: 560px;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .page-header h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 560px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 1.5rem;
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    .card h2 {
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 1.1rem;
+    }
+
+    .session-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .info-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem;
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 12px;
+    }
+
+    .info-label {
+      font-size: 0.8rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .info-value {
+      font-size: 0.9rem;
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .status-badge.active {
+      background: rgba(74, 222, 128, 0.15);
+      color: var(--success);
+    }
+
+    .status-badge.inactive {
+      background: rgba(248, 113, 113, 0.15);
+      color: var(--danger);
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    button {
+      background: rgba(122, 162, 214, 0.12);
+      border: 1px solid rgba(122, 162, 214, 0.25);
+      border-radius: 12px;
+      color: var(--accent);
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 0.85rem 1.2rem;
+      cursor: pointer;
+      transition: all .2s;
+      outline: none;
+    }
+
+    button:hover {
+      background: rgba(122, 162, 214, 0.18);
+      border-color: rgba(122, 162, 214, 0.4);
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    button.danger {
+      background: rgba(248, 113, 113, 0.12);
+      border-color: rgba(248, 113, 113, 0.25);
+      color: var(--danger);
+    }
+
+    button.danger:hover {
+      background: rgba(248, 113, 113, 0.18);
+      border-color: rgba(248, 113, 113, 0.4);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1rem 1.5rem;
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      opacity: 0;
+      transition: all .3s ease;
+      z-index: 1000;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    .toast.success {
+      border-color: rgba(74, 222, 128, 0.4);
+      color: var(--success);
+    }
+
+    .toast.error {
+      border-color: rgba(248, 113, 113, 0.4);
+      color: var(--danger);
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    @media (max-width: 600px) {
+      .button-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+  <style id="fleet-mobile-wcag-aa">
+    /* Contrato FROTA: ergonomia S20 e WCAG 2.1 AA. */
+    html, body { max-width: 100%; overflow-x: hidden; }
+    :is(button, [role="button"], input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) {
+      min-width: 48px !important;
+      min-height: 48px !important;
+      touch-action: manipulation;
+    }
+  </style>
+</head>
+<body>
+  <div class="page-header">
+    <h1>Gerenciamento de Sessão</h1>
+  </div>
+
+  <div class="card">
+    <h2>Status da Sessão</h2>
+    
+    <div class="session-info">
+      <div class="info-row">
+        <span class="info-label">Status</span>
+        <span class="status-badge" id="sessionStatus">
+          <span class="status-dot"></span>
+          <span id="statusText">Verificando...</span>
+        </span>
+      </div>
+      
+      <div class="info-row">
+        <span class="info-label">Usuário</span>
+        <span class="info-value" id="userEmail">—</span>
+      </div>
+      
+      <div class="info-row">
+        <span class="info-label">Última Atividade</span>
+        <span class="info-value" id="lastActivity">—</span>
+      </div>
+      
+      <div class="info-row">
+        <span class="info-label">Duração</span>
+        <span class="info-value" id="duration">—</span>
+      </div>
+    </div>
+
+    <div class="button-row">
+      <button id="btnStart" onclick="startSession()">
+        Atualizar Sessão
+      </button>
+      <button id="btnEnd" class="danger" onclick="endSession()">
+        Encerrar Sessão
+      </button>
+    </div>
+    
+    <div id="loading" class="loading" style="display: none; margin-top: 1rem; justify-content: center;">
+      <span class="spinner"></span>
+      <span>Processando...</span>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    let sessionData = null;
+
+    function showToast(message, type) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = 'toast show ' + (type || 'success');
+      setTimeout(() => {
+        toast.className = 'toast';
+      }, 3000);
+    }
+
+    function showLoading(show) {
+      document.getElementById('loading').style.display = show ? 'flex' : 'none';
+      document.getElementById('btnStart').disabled = show;
+      document.getElementById('btnEnd').disabled = show;
+    }
+
+    function getSessionToken() {
+      const query = new URLSearchParams(window.location.search);
+      const fragment = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+      return query.get('token') || query.get('tok') || fragment.get('token') || fragment.get('tok') || '';
+    }
+
+    function updateUI(data) {
+      const status = document.getElementById('sessionStatus');
+      const statusText = document.getElementById('statusText');
+      const userEmail = document.getElementById('userEmail');
+      const lastActivity = document.getElementById('lastActivity');
+      const duration = document.getElementById('duration');
+
+      if (data && data.active) {
+        status.className = 'status-badge active';
+        statusText.textContent = 'Ativa';
+        userEmail.textContent = data.email || '—';
+        lastActivity.textContent = new Date(data.lastActivity).toLocaleString('pt-BR');
+        
+        const durationMs = Date.now() - new Date(data.startedAt);
+        const minutes = Math.floor(durationMs / 60000);
+        duration.textContent = minutes < 60 ? 
+          minutes + ' min' : 
+          Math.floor(minutes / 60) + 'h ' + (minutes % 60) + 'min';
+      } else {
+        status.className = 'status-badge inactive';
+        statusText.textContent = 'Inativa';
+        userEmail.textContent = '—';
+        lastActivity.textContent = '—';
+        duration.textContent = '—';
+      }
+    }
+
+    function loadSession() {
+      showLoading(true);
+      
+      google.script.run
+        .withSuccessHandler(function(result) {
+          showLoading(false);
+          sessionData = result;
+          updateUI(result);
+        })
+        .withFailureHandler(function(error) {
+          showLoading(false);
+          showToast('Erro ao carregar sessão: ' + error.message, 'error');
+        })
+        .getSessionStatus(getSessionToken());
+    }
+
+    function startSession() {
+      showLoading(true);
+      
+      google.script.run
+        .withSuccessHandler(function(result) {
+          showLoading(false);
+          if (result.success) {
+            sessionData = result.session;
+            updateUI(result.session);
+            showToast('Sessão iniciada com sucesso!', 'success');
+          } else {
+            showToast(result.error || 'Erro ao iniciar sessão', 'error');
+          }
+        })
+        .withFailureHandler(function(error) {
+          showLoading(false);
+          showToast('Erro ao iniciar sessão: ' + error.message, 'error');
+        })
+        .upOracularRefreshSession(getSessionToken());
+    }
+
+    function endSession() {
+      showLoading(true);
+      
+      google.script.run
+        .withSuccessHandler(function(result) {
+          showLoading(false);
+          if (result.success) {
+            sessionData = null;
+            updateUI(null);
+            showToast('Sessão encerrada com sucesso!', 'success');
+          } else {
+            showToast(result.error || 'Erro ao encerrar sessão', 'error');
+          }
+        })
+        .withFailureHandler(function(error) {
+          showLoading(false);
+          showToast('Erro ao encerrar sessão: ' + error.message, 'error');
+        })
+        .upOracularEndSession(getSessionToken());
+    }
+
+    // Carrega status inicial
+    window.addEventListener('DOMContentLoaded', loadSession);
+    
+    // Atualiza duração a cada minuto se sessão ativa
+    setInterval(function() {
+      if (sessionData && sessionData.active) {
+        updateUI(sessionData);
+      }
+    }, 60000);
+  </script>
+</body>
+</html>

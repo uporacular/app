@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>UpOracular | Histórico de Trilhas</title>
+  <meta name="description" content="Visualize seu histórico de trilhas de leitura personalizadas.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #15171c;
+      --card-bg: rgba(30, 41, 59, 0.75);
+      --border: rgba(255, 255, 255, 0.1);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #7aa2d6;
+      --accent2: #9ec5e8;
+      --success: #4ade80;
+      --warning: #fbbf24;
+      --radius: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      background-image:
+        radial-gradient(at 0% 0%, rgba(56, 189, 248, .12) 0px, transparent 55%),
+        radial-gradient(at 100% 100%, rgba(129, 140, 248, .1) 0px, transparent 55%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 1.5rem 1rem 3rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .page-header {
+      width: 100%;
+      max-width: 680px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .page-header h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .stats-row {
+      display: flex;
+      gap: 0.75rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .stat-item {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 680px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 1.5rem;
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    .card h2 {
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 1.1rem;
+    }
+
+    .timeline {
+      position: relative;
+      padding-left: 2rem;
+    }
+
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 6px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: linear-gradient(to bottom, var(--accent), transparent);
+    }
+
+    .timeline-item {
+      position: relative;
+      margin-bottom: 1.5rem;
+      padding: 1rem;
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 12px;
+      border-left: 3px solid var(--accent);
+    }
+
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: -2.25rem;
+      top: 1.25rem;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 4px var(--bg);
+    }
+
+    .timeline-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+
+    .timeline-date {
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .tonality-badge {
+      padding: 0.25rem 0.65rem;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: rgba(122, 162, 214, 0.15);
+      color: var(--accent);
+    }
+
+    .recommendations-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .recommendation-item {
+      padding: 0.65rem;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 8px;
+      font-size: 0.85rem;
+    }
+
+    .recommendation-title {
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .recommendation-meta {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 0.25rem;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--muted);
+    }
+
+    .empty-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+
+    .empty-text {
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      padding: 2rem;
+      color: var(--muted);
+    }
+
+    button {
+      background: rgba(122, 162, 214, 0.12);
+      border: 1px solid rgba(122, 162, 214, 0.25);
+      border-radius: 12px;
+      color: var(--accent);
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 0.65rem 1rem;
+      cursor: pointer;
+      transition: all .2s;
+      outline: none;
+    }
+
+    button:hover {
+      background: rgba(122, 162, 214, 0.18);
+      border-color: rgba(122, 162, 214, 0.4);
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    @media (max-width: 600px) {
+      .timeline {
+        padding-left: 1.5rem;
+      }
+
+      .timeline-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+      }
+    }
+  </style>
+  <style id="fleet-mobile-wcag-aa">
+    /* Contrato FROTA: ergonomia S20 e WCAG 2.1 AA. */
+    html, body { max-width: 100%; overflow-x: hidden; }
+    :is(button, [role="button"], input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) {
+      min-width: 48px !important;
+      min-height: 48px !important;
+      touch-action: manipulation;
+    }
+  </style>
+</head>
+<body>
+  <div class="page-header">
+    <h1>Histórico de Trilhas</h1>
+    <div class="stats-row">
+      <span class="stat-item">
+        <span>📚</span>
+        <span id="totalCount">0</span>
+      </span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Suas Trilhas Personalizadas</h2>
+    
+    <div id="loading" class="loading">
+      <span class="spinner"></span>
+      <span>Carregando histórico...</span>
+    </div>
+
+    <div id="timeline" class="timeline" style="display: none;"></div>
+
+    <div id="empty" class="empty-state" style="display: none;">
+      <div class="empty-icon">🗺️</div>
+      <div class="empty-text">
+        Você ainda não possui trilhas de leitura registradas.<br>
+        Solicite uma recomendação personalizada para começar!
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function formatDate(dateStr) {
+      const date = new Date(dateStr);
+      const now = new Date();
+      const diff = now - date;
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+      if (days === 0) return 'Hoje';
+      if (days === 1) return 'Ontem';
+      if (days < 7) return days + ' dias atrás';
+      if (days < 30) return Math.floor(days / 7) + ' semanas atrás';
+      if (days < 365) return Math.floor(days / 30) + ' meses atrás';
+      return Math.floor(days / 365) + ' anos atrás';
+    }
+
+    function renderTimeline(history) {
+      const timeline = document.getElementById('timeline');
+      timeline.innerHTML = '';
+
+      history.forEach(function(trail) {
+        const item = document.createElement('div');
+        item.className = 'timeline-item';
+
+        let recommendations = [];
+        try {
+          recommendations = JSON.parse(trail.trailRaw || '[]');
+        } catch (e) {
+          recommendations = [];
+        }
+
+        item.innerHTML = `
+          <div class="timeline-header">
+            <span class="timeline-date">${escapeHtml(formatDate(trail.date))}</span>
+            <span class="tonality-badge">${escapeHtml(trail.tone || 'Padrão')}</span>
+          </div>
+          ${recommendations.length > 0 ? `
+            <ul class="recommendations-list">
+              ${recommendations.slice(0, 3).map(function(rec) {
+                return `
+                  <li class="recommendation-item">
+                    <div class="recommendation-title">${escapeHtml(rec.titulo || rec.title || 'Sem título')}</div>
+                    ${rec.autor || rec.author ? `
+                      <div class="recommendation-meta">por ${escapeHtml(rec.autor || rec.author)}</div>
+                    ` : ''}
+                  </li>
+                `;
+              }).join('')}
+              ${recommendations.length > 3 ? `
+                <li class="recommendation-item" style="font-style: italic; color: var(--muted);">
+                  + ${recommendations.length - 3} recomendações adicionais
+                </li>
+              ` : ''}
+            </ul>
+          ` : '<div style="color: var(--muted); font-size: 0.85rem;">Sem recomendações registradas</div>'}
+        `;
+
+        timeline.appendChild(item);
+      });
+    }
+
+    function loadHistory() {
+      google.script.run
+        .withSuccessHandler(function(history) {
+          document.getElementById('loading').style.display = 'none';
+
+          if (history && history.length > 0) {
+            document.getElementById('timeline').style.display = 'block';
+            document.getElementById('totalCount').textContent = history.length;
+            renderTimeline(history);
+          } else {
+            document.getElementById('empty').style.display = 'block';
+          }
+        })
+        .withFailureHandler(function(error) {
+          document.getElementById('loading').style.display = 'none';
+          document.getElementById('empty').style.display = 'block';
+          document.querySelector('.empty-text').innerHTML = 
+            'Erro ao carregar histórico:<br>' + escapeHtml(error.message);
+        })
+        .getUserTrailHistory(Session.getActiveUser().getEmail());
+    }
+
+    window.addEventListener('DOMContentLoaded', loadHistory);
+  </script>
+</body>
+</html>

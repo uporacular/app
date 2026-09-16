@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>UpOracular | Autenticação</title>
+  <meta name="description" content="Autentique-se no sistema UpOracular.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #15171c;
+      --card-bg: rgba(30, 41, 59, 0.75);
+      --border: rgba(255, 255, 255, 0.1);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #7aa2d6;
+      --accent2: #9ec5e8;
+      --success: #4ade80;
+      --danger: #f87171;
+      --radius: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      background-image:
+        radial-gradient(at 0% 0%, rgba(56, 189, 248, .12) 0px, transparent 55%),
+        radial-gradient(at 100% 100%, rgba(129, 140, 248, .1) 0px, transparent 55%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem 1rem;
+    }
+
+    .auth-container {
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .logo-section {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+
+    .logo-text {
+      font-size: 2rem;
+      font-weight: 600;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+    }
+
+    .logo-subtitle {
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 2rem;
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    .card h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      color: var(--text);
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      margin-bottom: 1rem;
+    }
+
+    label {
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--muted);
+      letter-spacing: .04em;
+    }
+
+    input {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.9rem;
+      padding: 0.75rem 1rem;
+      width: 100%;
+      transition: border-color .2s, box-shadow .2s;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, .15);
+    }
+
+    input::placeholder {
+      color: rgba(148, 163, 184, 0.5);
+    }
+
+    button {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 600;
+      padding: 0.9rem;
+      cursor: pointer;
+      transition: all .2s;
+      outline: none;
+      width: 100%;
+      margin-top: 0.5rem;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(122, 162, 214, 0.25);
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin: 1.5rem 0;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .google-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .google-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      box-shadow: none;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1rem 1.5rem;
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      opacity: 0;
+      transition: all .3s ease;
+      z-index: 1000;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      max-width: 400px;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    .toast.success {
+      border-color: rgba(74, 222, 128, 0.4);
+      color: var(--success);
+    }
+
+    .toast.error {
+      border-color: rgba(248, 113, 113, 0.4);
+      color: var(--danger);
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--border);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      vertical-align: middle;
+      margin-left: 0.5rem;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .help-text {
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-align: center;
+      margin-top: 1.5rem;
+    }
+
+    .help-text a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .help-text a:hover {
+      text-decoration: underline;
+    }
+  </style>
+  <style id="fleet-mobile-wcag-aa">
+    /* Contrato FROTA: ergonomia S20 e WCAG 2.1 AA. */
+    html, body { max-width: 100%; overflow-x: hidden; }
+    :is(button, [role="button"], input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) {
+      min-width: 48px !important;
+      min-height: 48px !important;
+      touch-action: manipulation;
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-container">
+    <div class="logo-section">
+      <div class="logo-text">UpOracular</div>
+      <div class="logo-subtitle">Sistema de Recomendação de Leituras</div>
+    </div>
+
+    <div class="card">
+      <h2>Bem-vindo de volta</h2>
+      
+      <form id="authForm" onsubmit="handleSubmit(event)">
+        <div class="form-group">
+          <label for="email">E-mail</label>
+          <input inputmode="email" 
+            type="email" 
+            id="email" 
+            name="email" 
+            placeholder="seu.email@escola.edu.br" 
+            required 
+            autocomplete="email"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="password">Senha</label>
+          <input inputmode="text" 
+            type="password" 
+            id="password" 
+            name="password" 
+            placeholder="••••••••" 
+            required 
+            autocomplete="current-password"
+          />
+        </div>
+
+        <button type="submit" id="submitBtn">
+          Entrar
+        </button>
+      </form>
+
+      <div class="divider">ou</div>
+
+      <button class="google-btn" onclick="handleGoogleAuth()">
+        <svg width="18" height="18" viewBox="0 0 18 18">
+          <path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z"/>
+          <path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2a4.8 4.8 0 0 1-7.18-2.54H1.83v2.07A8 8 0 0 0 8.98 17z"/>
+          <path fill="#FBBC05" d="M4.5 10.52a4.8 4.8 0 0 1 0-3.04V5.41H1.83a8 8 0 0 0 0 7.18l2.67-2.07z"/>
+          <path fill="#EA4335" d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 1.83 5.4L4.5 7.49a4.77 4.77 0 0 1 4.48-3.3z"/>
+        </svg>
+        Entrar com Google
+      </button>
+
+      <div class="help-text">
+        Problemas para acessar? 
+        <a href="#" onclick="showHelp(); return false;">Fale conosco</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    function showToast(message, type) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = 'toast show ' + (type || 'success');
+      setTimeout(() => {
+        toast.className = 'toast';
+      }, 3500);
+    }
+
+    function setLoading(loading) {
+      const btn = document.getElementById('submitBtn');
+      if (loading) {
+        btn.disabled = true;
+        btn.innerHTML = 'Autenticando<span class="spinner"></span>';
+      } else {
+        btn.disabled = false;
+        btn.textContent = 'Entrar';
+      }
+    }
+
+    function handleSubmit(event) {
+      event.preventDefault();
+      
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      if (!email || !password) {
+        showToast('Preencha todos os campos', 'error');
+        return;
+      }
+
+      setLoading(true);
+
+      google.script.run
+        .withSuccessHandler(function(result) {
+          setLoading(false);
+          if (result.success) {
+            showToast('Login realizado com sucesso!', 'success');
+            setTimeout(function() {
+              if (result.redirectUrl) {
+                window.top.location.href = result.redirectUrl;
+              } else {
+                google.script.host.close();
+              }
+            }, 1500);
+          } else {
+            showToast(result.error || 'Credenciais inválidas', 'error');
+          }
+        })
+        .withFailureHandler(function(error) {
+          setLoading(false);
+          showToast('Erro ao autenticar: ' + error.message, 'error');
+        })
+        .authenticateUser(email, password);
+    }
+
+    function handleGoogleAuth() {
+      showToast('Autenticação Google em breve...', 'success');
+      // Implementar OAuth quando necessário
+    }
+
+    function showHelp() {
+      showToast('Entre em contato com a coordenação da biblioteca', 'success');
+    }
+
+    // Auto-focus no primeiro campo
+    window.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('email').focus();
+    });
+  </script>
+</body>
+</html>
